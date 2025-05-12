@@ -5,10 +5,13 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.emerbv.ecommadmin.features.auth.data.model.JwtResponse
+import com.emerbv.ecommadmin.features.products.data.model.ProductDto
 
 sealed class Screen {
     data object Login : Screen()
     data class Dashboard(val userData: JwtResponse) : Screen()
+    data class ProductList(val userData: JwtResponse) : Screen()
+    data class ProductDetail(val userData: JwtResponse, val product: ProductDto) : Screen()
 }
 
 class NavigationState(

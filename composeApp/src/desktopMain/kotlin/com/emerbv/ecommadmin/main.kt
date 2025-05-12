@@ -9,15 +9,19 @@ import com.emerbv.ecommadmin.core.di.appModule
 import com.emerbv.ecommadmin.core.navigation.Screen
 import com.emerbv.ecommadmin.core.navigation.rememberNavigationState
 import com.emerbv.ecommadmin.core.ui.theme.rememberThemeState
+import com.emerbv.ecommadmin.core.utils.TokenManager
 import com.emerbv.ecommadmin.features.auth.presentation.LoginScreenWithRememberMe
 import com.emerbv.ecommadmin.features.auth.presentation.LoginViewModel
 import com.emerbv.ecommadmin.features.dashboard.presentation.DashboardScreen
+import com.emerbv.ecommadmin.features.products.di.productModule
+import com.emerbv.ecommadmin.features.products.presentation.ProductDetailScreen
+import com.emerbv.ecommadmin.features.products.presentation.ProductListScreen
+import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
 import com.russhwolf.settings.PreferencesSettings
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.get
 import java.util.prefs.Preferences
-import com.emerbv.ecommadmin.core.utils.TokenManager
 
 fun main() = application {
     // Configurar preferencias para almacenamiento
@@ -34,11 +38,12 @@ fun main() = application {
 
     // Inicializar Koin
     startKoin {
-        modules(appModule, platformModule)
+        modules(appModule, platformModule, productModule)
     }
 
-    // Obtener ViewModel
+    // Obtener ViewModels
     val loginViewModel = get<LoginViewModel>(LoginViewModel::class.java)
+    val productListViewModel = get<ProductListViewModel>(ProductListViewModel::class.java)
     val tokenManagerInstance = get<TokenManager>(TokenManager::class.java)
 
     // Verificar si hay una sesión activa
@@ -87,6 +92,28 @@ fun main() = application {
                     userData = currentScreen.userData,
                     navigationState = navigationState,
                     tokenManager = tokenManagerInstance
+                )
+            }
+            is Screen.ProductList -> {
+                ProductListScreen(
+                    viewModel = productListViewModel,
+                    onProductSelected = { product ->
+                        navigationState.navigateTo(
+                            Screen.ProductDetail(
+                                userData = currentScreen.userData,
+                                product = product
+                            )
+                        )
+                    }
+                )
+            }
+            is Screen.ProductDetail -> {
+                ProductDetailScreen(
+                    product = currentScreen.product,
+                    onBackClick = {
+                        navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
+                    },
+                    onEditClick = { /* Implementar en el futuro */ }
                 )
             }
         }

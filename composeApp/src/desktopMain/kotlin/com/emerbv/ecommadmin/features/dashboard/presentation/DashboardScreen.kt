@@ -1,5 +1,6 @@
 package com.emerbv.ecommadmin.features.dashboard.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -69,7 +70,13 @@ fun DashboardScreen(
                             icon = { Icon(item.icon, contentDescription = item.title) },
                             label = { Text(item.title) },
                             selected = selectedTabIndex == index,
-                            onClick = { selectedTabIndex = index }
+                            onClick = {
+                                selectedTabIndex = index
+                                // Navegar a la pantalla correspondiente
+                                if (index == 1) { // Productos
+                                    navigationState.navigateTo(Screen.ProductList(userData))
+                                }
+                            }
                         )
                     }
                 }
@@ -81,7 +88,11 @@ fun DashboardScreen(
                     .padding(innerPadding)
             ) {
                 when (selectedTabIndex) {
-                    0 -> DashboardContent()
+                    0 -> DashboardContent(
+                        onProductsClick = {
+                            navigationState.navigateTo(Screen.ProductList(userData))
+                        }
+                    )
                     else -> PlaceholderContent(navigationItems[selectedTabIndex].title)
                 }
             }
@@ -90,7 +101,7 @@ fun DashboardScreen(
 }
 
 @Composable
-fun DashboardContent() {
+fun DashboardContent(onProductsClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -111,11 +122,14 @@ fun DashboardContent() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Clickable card para ir a la sección de productos
             StatCard(
                 title = "Productos",
                 value = "324",
                 icon = Icons.Default.Inventory,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onProductsClick() }
             )
 
             StatCard(
