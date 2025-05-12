@@ -52,7 +52,12 @@ fun main() = application {
 
     // Estado inicial de la navegación
     val initialScreen = if (token != null && userId != null) {
-        Screen.Dashboard(com.emerbv.ecommadmin.features.auth.data.model.JwtResponse(userId, token))
+        Screen.Dashboard(
+            com.emerbv.ecommadmin.features.auth.data.model.JwtResponse(
+                id = userId,
+                token = token
+            )
+        )
     } else {
         Screen.Login
     }
@@ -104,6 +109,9 @@ fun main() = application {
                                 product = product
                             )
                         )
+                    },
+                    onBackClick = {
+                        navigationState.navigateTo(Screen.Dashboard(currentScreen.userData))
                     }
                 )
             }

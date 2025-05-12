@@ -22,7 +22,8 @@ import com.emerbv.ecommadmin.features.products.presentation.components.ProductLi
 @Composable
 fun ProductListScreen(
     viewModel: ProductListViewModel,
-    onProductSelected: (ProductDto) -> Unit
+    onProductSelected: (ProductDto) -> Unit,
+    onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -45,7 +46,8 @@ fun ProductListScreen(
                     onSortClick = { showSortMenu = true },
                     onCategoryClick = { showCategoryMenu = true },
                     sortOrder = uiState.sortOrder,
-                    selectedCategory = uiState.selectedCategory
+                    selectedCategory = uiState.selectedCategory,
+                    onBackClick = onBackClick
                 )
             }
         ) { paddingValues ->
@@ -287,7 +289,8 @@ private fun ProductsTopAppBar(
     onSortClick: () -> Unit,
     onCategoryClick: () -> Unit,
     sortOrder: SortOrder,
-    selectedCategory: String?
+    selectedCategory: String?,
+    onBackClick: () -> Unit
 ) {
     var showSearch by remember { mutableStateOf(false) }
 
@@ -319,6 +322,10 @@ private fun ProductsTopAppBar(
                     showSearch = false
                     onSearchQueryChange("")
                 }) {
+                    Icon(Icons.Default.ArrowBack, "Volver")
+                }
+            } else {
+                IconButton(onClick = onBackClick) {
                     Icon(Icons.Default.ArrowBack, "Volver")
                 }
             }
