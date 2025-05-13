@@ -12,6 +12,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.Json
 
 /**
  * Implementación del repositorio de categorías usando Ktor
@@ -23,6 +24,13 @@ class CategoryRepositoryImpl(
 ) : CategoryRepository {
 
     private val apiPath = "$baseUrl/categories"
+
+    // JSON personalizado para parsing manual si es necesario
+    private val json = Json {
+        isLenient = true
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
 
     private val authHeader: String?
         get() = tokenProvider()?.let { "Bearer $it" }
@@ -49,13 +57,23 @@ class CategoryRepositoryImpl(
             println("Cuerpo de la respuesta: $responseText")
 
             if (response.status.isSuccess()) {
-                val categoryResponse: CategoryResponse = response.body()
-                println("Respuesta parseada: ${categoryResponse.message}")
-                println("Categorías recibidas: ${categoryResponse.data?.size}")
+                try {
+                    val categoryResponse: CategoryResponse = response.body()
+                    println("Respuesta parseada: ${categoryResponse.message}")
 
-                categoryResponse.data?.let { categories ->
-                    emit(ApiResult.Success(categories))
-                } ?: emit(ApiResult.Error("No se encontraron categorías: ${categoryResponse.message}"))
+                    val categories = categoryResponse.data
+                    println("Categorías recibidas: ${categories?.size ?: 0}")
+
+                    if (categories != null && categories.isNotEmpty()) {
+                        emit(ApiResult.Success(categories))
+                    } else {
+                        emit(ApiResult.Success(emptyList()))
+                    }
+                } catch (e: Exception) {
+                    println("Error parseando la respuesta: ${e.message}")
+                    e.printStackTrace()
+                    emit(ApiResult.Error("Error procesando los datos: ${e.message}"))
+                }
             } else {
                 when (response.status) {
                     HttpStatusCode.Unauthorized -> {
@@ -101,9 +119,12 @@ class CategoryRepositoryImpl(
             if (response.status.isSuccess()) {
                 val categoryResponse: CategoryResponse = response.body()
 
-                categoryResponse.data?.firstOrNull()?.let { category ->
+                val category = categoryResponse.data?.firstOrNull()
+                if (category != null) {
                     emit(ApiResult.Success(category))
-                } ?: emit(ApiResult.Error("Category not found: ${categoryResponse.message}"))
+                } else {
+                    emit(ApiResult.Error("Category not found: ${categoryResponse.message}"))
+                }
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
@@ -139,9 +160,12 @@ class CategoryRepositoryImpl(
             if (response.status.isSuccess()) {
                 val categoryResponse: CategoryResponse = response.body()
 
-                categoryResponse.data?.firstOrNull()?.let { category ->
+                val category = categoryResponse.data?.firstOrNull()
+                if (category != null) {
                     emit(ApiResult.Success(category))
-                } ?: emit(ApiResult.Error("Failed to add category: ${categoryResponse.message}"))
+                } else {
+                    emit(ApiResult.Error("Failed to add category: ${categoryResponse.message}"))
+                }
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
@@ -176,9 +200,12 @@ class CategoryRepositoryImpl(
             if (response.status.isSuccess()) {
                 val categoryResponse: CategoryResponse = response.body()
 
-                categoryResponse.data?.firstOrNull()?.let { category ->
+                val category = categoryResponse.data?.firstOrNull()
+                if (category != null) {
                     emit(ApiResult.Success(category))
-                } ?: emit(ApiResult.Error("Failed to update category: ${categoryResponse.message}"))
+                } else {
+                    emit(ApiResult.Error("Failed to update category: ${categoryResponse.message}"))
+                }
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }

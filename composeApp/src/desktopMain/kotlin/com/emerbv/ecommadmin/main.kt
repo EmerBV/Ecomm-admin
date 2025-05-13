@@ -179,6 +179,12 @@ fun main() = application {
             }
             // Nuevas pantallas de categorías
             is Screen.CategoryList -> {
+                // Debug
+                println("Renderizando CategoryListScreen")
+
+                // Antes de mostrar, inténtemos cargar las categorías
+                categoryListViewModel.loadCategories()
+
                 CategoryListScreen(
                     viewModel = categoryListViewModel,
                     userData = currentScreen.userData,

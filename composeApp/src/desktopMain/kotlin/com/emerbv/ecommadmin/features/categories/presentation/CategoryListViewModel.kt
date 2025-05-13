@@ -33,27 +33,36 @@ class CategoryListViewModel(
         scope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = "") }
 
+            println("Iniciando carga de categorías desde el ViewModel")
+
             getAllCategoriesUseCase().collect { result ->
                 when (result) {
                     is ApiResult.Success -> {
-                        _uiState.update {
-                            it.copy(
-                                categories = result.data.sortedBy { category -> category.id },
+                        val sortedCategories = result.data.sortedBy { category -> category.id }
+                        println("Categorías cargadas correctamente: ${sortedCategories.size}")
+
+                        _uiState.update { state ->
+                            state.copy(
+                                categories = sortedCategories,
                                 isLoading = false,
                                 errorMessage = ""
                             )
                         }
+
+                        // Verificación adicional del estado actualizado
+                        println("Estado actualizado: ${_uiState.value.categories.size} categorías en el estado")
                     }
                     is ApiResult.Error -> {
-                        _uiState.update {
-                            it.copy(
+                        println("Error al cargar categorías: ${result.message}")
+                        _uiState.update { state ->
+                            state.copy(
                                 isLoading = false,
                                 errorMessage = result.message
                             )
                         }
                     }
                     is ApiResult.Loading -> {
-                        _uiState.update { it.copy(isLoading = true) }
+                        _uiState.update { state -> state.copy(isLoading = true) }
                     }
                 }
             }

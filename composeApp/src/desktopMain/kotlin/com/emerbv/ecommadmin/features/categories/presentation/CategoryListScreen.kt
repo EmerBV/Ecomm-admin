@@ -21,7 +21,6 @@ import com.emerbv.ecommadmin.core.navigation.Screen
 import com.emerbv.ecommadmin.core.ui.theme.EcommAdminTheme
 import com.emerbv.ecommadmin.features.auth.data.model.JwtResponse
 import com.emerbv.ecommadmin.features.categories.data.model.CategoryDto
-import com.emerbv.ecommadmin.features.dashboard.presentation.components.DashboardSidebar
 
 @Composable
 fun CategoryListScreen(
@@ -33,191 +32,187 @@ fun CategoryListScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf<CategoryDto?>(null) }
 
+    // Cargar categorías al entrar a la pantalla
     LaunchedEffect(Unit) {
         viewModel.loadCategories()
     }
 
+    // Debug - Mostrar información sobre el estado
+    LaunchedEffect(uiState) {
+        println("UI State actualizado: ${uiState.categories.size} categorías, isLoading=${uiState.isLoading}, error=${uiState.errorMessage}")
+    }
+
     EcommAdminTheme {
-        Row(modifier = Modifier.fillMaxSize()) {
-            // Sidebar
-            DashboardSidebar(
-                onNavigate = { route ->
-                    when (route) {
-                        "dashboard" -> navigationState.navigateTo(Screen.Dashboard(userData))
-                        "products" -> navigationState.navigateTo(Screen.ProductList(userData))
-                        "categories" -> {} // Ya estamos en esta pantalla
-                        // Agrega más rutas según sea necesario
+        // Eliminada la Row que contenía el sidebar, ahora usamos solo la columna de contenido
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            // Top Bar
+            TopAppBar(
+                title = { Text("Categories") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                userName = "Admin"
+                backgroundColor = MaterialTheme.colors.background,
+                elevation = 0.dp,
+                actions = {
+                    IconButton(onClick = { viewModel.loadCategories() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                }
             )
 
             // Main content
-            Column(
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
+                    .fillMaxSize()
+                    .padding(16.dp)
             ) {
-                // Top Bar
-                TopAppBar(
-                    title = { Text("Categories") },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Categories",
+                                style = MaterialTheme.typography.h6,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Manage your product categories",
+                                style = MaterialTheme.typography.body2,
+                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                            )
                         }
-                    },
-                    backgroundColor = MaterialTheme.colors.background,
-                    elevation = 0.dp,
-                    actions = {
-                        IconButton(onClick = { viewModel.loadCategories() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+
+                        Button(
+                            onClick = { navigationState.navigateTo(Screen.CategoryAdd(userData)) },
+                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add Category")
                         }
                     }
-                )
 
-                // Main content
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
+                    // Table header
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = 2.dp
                     ) {
-                        // Header
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Categories",
-                                    style = MaterialTheme.typography.h6,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "Manage your product categories",
-                                    style = MaterialTheme.typography.body2,
-                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
-                                )
-                            }
-
-                            Button(
-                                onClick = { navigationState.navigateTo(Screen.CategoryAdd(userData)) },
-                                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            // Table header
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colors.surface)
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Add",
-                                    modifier = Modifier.size(16.dp)
+                                Text(
+                                    text = "ID",
+                                    style = MaterialTheme.typography.subtitle2,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.width(50.dp)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Add Category")
+                                Text(
+                                    text = "Category Name",
+                                    style = MaterialTheme.typography.subtitle2,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(3f)
+                                )
+                                Text(
+                                    text = "Products",
+                                    style = MaterialTheme.typography.subtitle2,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(
+                                    text = "Actions",
+                                    style = MaterialTheme.typography.subtitle2,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Center
+                                )
                             }
-                        }
 
-                        // Table header
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            elevation = 2.dp
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                // Table header
-                                Row(
+                            Divider()
+
+                            // Content area
+                            if (uiState.isLoading && uiState.categories.isEmpty()) {
+                                Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .background(MaterialTheme.colors.surface)
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .height(200.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = "ID",
-                                        style = MaterialTheme.typography.subtitle2,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.width(50.dp)
-                                    )
-                                    Text(
-                                        text = "Category Name",
-                                        style = MaterialTheme.typography.subtitle2,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.weight(3f)
-                                    )
-                                    Text(
-                                        text = "Products",
-                                        style = MaterialTheme.typography.subtitle2,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Text(
-                                        text = "Actions",
-                                        style = MaterialTheme.typography.subtitle2,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.weight(1f),
-                                        textAlign = TextAlign.Center
-                                    )
+                                    CircularProgressIndicator()
                                 }
-
-                                Divider()
-
-                                // Content area
-                                if (uiState.isLoading) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(200.dp),
-                                        contentAlignment = Alignment.Center
+                            } else if (uiState.errorMessage.isNotEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        CircularProgressIndicator()
-                                    }
-                                } else if (uiState.errorMessage != null) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(200.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        Icon(
+                                            imageVector = Icons.Default.Error,
+                                            contentDescription = "Error",
+                                            tint = MaterialTheme.colors.error
+                                        )
+                                        Text(
+                                            text = uiState.errorMessage,
+                                            color = MaterialTheme.colors.error,
+                                            style = MaterialTheme.typography.body2
+                                        )
+                                        Button(
+                                            onClick = { viewModel.loadCategories() },
+                                            colors = ButtonDefaults.buttonColors(
+                                                backgroundColor = MaterialTheme.colors.primary
+                                            )
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Error,
-                                                contentDescription = "Error",
-                                                tint = MaterialTheme.colors.error
-                                            )
-                                            Text(
-                                                text = uiState.errorMessage,
-                                                color = MaterialTheme.colors.error,
-                                                style = MaterialTheme.typography.body2
-                                            )
-                                            Button(
-                                                onClick = { viewModel.loadCategories() },
-                                                colors = ButtonDefaults.buttonColors(
-                                                    backgroundColor = MaterialTheme.colors.primary
-                                                )
-                                            ) {
-                                                Text("Retry")
-                                            }
+                                            Text("Retry")
                                         }
                                     }
-                                } else if (uiState.categories.isEmpty()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(200.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "No categories found",
-                                            style = MaterialTheme.typography.body1,
-                                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
-                                        )
-                                    }
-                                } else {
-                                    // Category list
+                                }
+                            } else if (uiState.categories.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No categories found",
+                                        style = MaterialTheme.typography.body1,
+                                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
+                            } else {
+                                // Category list - Altura fija para evitar problemas de renderizado
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 200.dp)
+                                ) {
                                     LazyColumn {
                                         items(uiState.categories) { category ->
                                             CategoryRow(
@@ -275,6 +270,9 @@ fun CategoryRow(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    // Para fines de depuración
+    println("Renderizando categoría: ${category.id} - ${category.name}")
+
     Row(
         modifier = Modifier
             .fillMaxWidth()

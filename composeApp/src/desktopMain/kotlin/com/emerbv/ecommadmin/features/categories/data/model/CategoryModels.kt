@@ -21,4 +21,8 @@ data class CategoryDto(
     val imageFileName: String? = null,
     val imageFileType: String? = null,
     val imageDownloadUrl: String? = null
-)
+) {
+    override fun toString(): String {
+        return "CategoryDto(id=$id, name='$name', imageFileName=$imageFileName, imageDownloadUrl=$imageDownloadUrl)"
+    }
+}
