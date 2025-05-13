@@ -3,8 +3,8 @@ package com.emerbv.ecommadmin.features.products.di
 import com.emerbv.ecommadmin.core.utils.TokenManager
 import com.emerbv.ecommadmin.features.products.data.repository.ProductRepository
 import com.emerbv.ecommadmin.features.products.data.repository.ProductRepositoryImpl
-import com.emerbv.ecommadmin.features.products.data.repository.CategoryRepository
-import com.emerbv.ecommadmin.features.products.data.repository.CategoryRepositoryImpl
+import com.emerbv.ecommadmin.features.categories.data.repository.CategoryRepository
+import com.emerbv.ecommadmin.features.categories.data.repository.CategoryRepositoryImpl
 import com.emerbv.ecommadmin.features.products.domain.*
 import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
 import com.emerbv.ecommadmin.features.products.presentation.ProductEditViewModel
@@ -49,14 +49,6 @@ val productModule = module {
         )
     }
 
-    single<CategoryRepository> {
-        CategoryRepositoryImpl(
-            httpClient = get(qualifier = org.koin.core.qualifier.named("productClient")),
-            baseUrl = get(),
-            tokenProvider = { get<TokenManager>().getToken() }
-        )
-    }
-
     // Casos de uso
     factoryOf(::GetAllProductsUseCase)
     factoryOf(::GetProductByIdUseCase)
@@ -65,7 +57,6 @@ val productModule = module {
     factoryOf(::GetBestSellerProductsUseCase)
     factoryOf(::GetMostWishedProductsUseCase)
     factoryOf(::GetRecentProductsUseCase)
-    factoryOf(::GetAllCategoriesUseCase)
 
     // ViewModels
     factoryOf(::ProductListViewModel)

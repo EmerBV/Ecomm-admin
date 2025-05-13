@@ -2,7 +2,7 @@ package com.emerbv.ecommadmin.features.products.presentation
 
 import com.emerbv.ecommadmin.core.network.ApiResult
 import com.emerbv.ecommadmin.features.products.data.model.CategoryDto
-import com.emerbv.ecommadmin.features.products.domain.GetAllCategoriesUseCase
+import com.emerbv.ecommadmin.features.categories.domain.GetAllCategoriesUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,9 +44,11 @@ class ProductEditViewModel(
                         }
 
                         is ApiResult.Success -> {
+                            val categories = result.data
+
                             _categoryState.update {
                                 it.copy(
-                                    categories = result.data,
+                                    categories = categories,
                                     isLoading = false,
                                     errorMessage = null
                                 )
