@@ -35,13 +35,18 @@ class CategoryRepositoryImpl(
 
             val response = httpClient.get("$apiPath/all") {
                 headers {
-                    authHeader?.let { header("Authorization", it) }
+                    // Para rutas públicas, no necesitamos autenticación
+                    header("Content-Type", "application/json")
+                    header("Accept", "application/json")
                 }
             }
 
-            // Log de la respuesta bruta para debuggear
+            // Log de la respuesta para depuración
+            println("Código de estado de respuesta: ${response.status}")
+            println("Cabeceras de respuesta: ${response.headers}")
+
             val responseText = response.bodyAsText()
-            println("Respuesta bruta: $responseText")
+            println("Cuerpo de la respuesta: $responseText")
 
             if (response.status.isSuccess()) {
                 val categoryResponse: CategoryResponse = response.body()
@@ -52,13 +57,26 @@ class CategoryRepositoryImpl(
                     emit(ApiResult.Success(categories))
                 } ?: emit(ApiResult.Error("No se encontraron categorías: ${categoryResponse.message}"))
             } else {
-                emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}"))
+                when (response.status) {
+                    HttpStatusCode.Unauthorized -> {
+                        emit(ApiResult.Error("Error en la solicitud", 401))
+                    }
+                    else -> {
+                        emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
+                    }
+                }
             }
 
         } catch (e: ClientRequestException) {
             println("Error de cliente HTTP: ${e.response.status} - ${e.message}")
+            val errorBody = try {
+                e.response.bodyAsText()
+            } catch (ex: Exception) {
+                "No se pudo leer el cuerpo del error"
+            }
+            println("Cuerpo del error: $errorBody")
+
             val errorMessage = when (e.response.status) {
-                HttpStatusCode.Unauthorized -> "Autenticación requerida. Por favor, inicie sesión nuevamente."
                 HttpStatusCode.NotFound -> "No se encontraron categorías"
                 else -> "Error de conexión: ${e.message}"
             }
@@ -73,19 +91,25 @@ class CategoryRepositoryImpl(
     override suspend fun getCategoryById(id: Long): Flow<ApiResult<CategoryDto>> = flow {
         emit(ApiResult.Loading)
         try {
-            val response: CategoryResponse = httpClient.get("$apiPath/category/$id/category") {
+            val response = httpClient.get("$apiPath/category/$id/category") {
                 headers {
-                    authHeader?.let { header("Authorization", it) }
+                    header("Content-Type", "application/json")
+                    header("Accept", "application/json")
                 }
-            }.body()
+            }
 
-            response.data?.firstOrNull()?.let { category ->
-                emit(ApiResult.Success(category))
-            } ?: emit(ApiResult.Error("Category not found: ${response.message}"))
+            if (response.status.isSuccess()) {
+                val categoryResponse: CategoryResponse = response.body()
+
+                categoryResponse.data?.firstOrNull()?.let { category ->
+                    emit(ApiResult.Success(category))
+                } ?: emit(ApiResult.Error("Category not found: ${categoryResponse.message}"))
+            } else {
+                emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
+            }
 
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
-                HttpStatusCode.Unauthorized -> "Authentication required. Please login again."
                 HttpStatusCode.NotFound -> "Category not found"
                 else -> "Connection error: ${e.message}"
             }
@@ -95,23 +119,32 @@ class CategoryRepositoryImpl(
         }
     }
 
+    // Los siguientes métodos sí pueden requerir autenticación según tu backend
+
     override suspend fun addCategory(name: String): Flow<ApiResult<CategoryDto>> = flow {
         emit(ApiResult.Loading)
         try {
             // Crear objeto de categoría para el cuerpo de la solicitud
             val categoryBody = mapOf("name" to name)
 
-            val response: CategoryResponse = httpClient.post("$apiPath/add") {
+            val response = httpClient.post("$apiPath/add") {
                 headers {
                     authHeader?.let { header("Authorization", it) }
                     contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
                 }
                 setBody(categoryBody)
-            }.body()
+            }
 
-            response.data?.firstOrNull()?.let { category ->
-                emit(ApiResult.Success(category))
-            } ?: emit(ApiResult.Error("Failed to add category: ${response.message}"))
+            if (response.status.isSuccess()) {
+                val categoryResponse: CategoryResponse = response.body()
+
+                categoryResponse.data?.firstOrNull()?.let { category ->
+                    emit(ApiResult.Success(category))
+                } ?: emit(ApiResult.Error("Failed to add category: ${categoryResponse.message}"))
+            } else {
+                emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
+            }
 
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
@@ -131,17 +164,24 @@ class CategoryRepositoryImpl(
             // Crear objeto de categoría para el cuerpo de la solicitud
             val categoryBody = mapOf("name" to name)
 
-            val response: CategoryResponse = httpClient.put("$apiPath/category/$id/update") {
+            val response = httpClient.put("$apiPath/category/$id/update") {
                 headers {
                     authHeader?.let { header("Authorization", it) }
                     contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
                 }
                 setBody(categoryBody)
-            }.body()
+            }
 
-            response.data?.firstOrNull()?.let { category ->
-                emit(ApiResult.Success(category))
-            } ?: emit(ApiResult.Error("Failed to update category: ${response.message}"))
+            if (response.status.isSuccess()) {
+                val categoryResponse: CategoryResponse = response.body()
+
+                categoryResponse.data?.firstOrNull()?.let { category ->
+                    emit(ApiResult.Success(category))
+                } ?: emit(ApiResult.Error("Failed to update category: ${categoryResponse.message}"))
+            } else {
+                emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
+            }
 
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
@@ -159,18 +199,26 @@ class CategoryRepositoryImpl(
     override suspend fun deleteCategory(id: Long): Flow<ApiResult<Boolean>> = flow {
         emit(ApiResult.Loading)
         try {
-            val response: CategoryResponse = httpClient.delete("$apiPath/category/$id/delete") {
+            val response = httpClient.delete("$apiPath/category/$id/delete") {
                 headers {
                     authHeader?.let { header("Authorization", it) }
+                    accept(ContentType.Application.Json)
                 }
-            }.body()
+            }
 
-            // Si no hay error en la respuesta, consideramos que la eliminación fue exitosa
-            if (response.message.contains("deleted", ignoreCase = true) ||
-                response.message.contains("success", ignoreCase = true)) {
-                emit(ApiResult.Success(true))
+            if (response.status.isSuccess()) {
+                val categoryResponse: CategoryResponse = response.body()
+
+                // Si no hay error en la respuesta, consideramos que la eliminación fue exitosa
+                if (response.status.isSuccess() &&
+                    (categoryResponse.message.contains("deleted", ignoreCase = true) ||
+                            categoryResponse.message.contains("success", ignoreCase = true))) {
+                    emit(ApiResult.Success(true))
+                } else {
+                    emit(ApiResult.Error("Failed to delete category: ${categoryResponse.message}"))
+                }
             } else {
-                emit(ApiResult.Error("Failed to delete category: ${response.message}"))
+                emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
 
         } catch (e: ClientRequestException) {
