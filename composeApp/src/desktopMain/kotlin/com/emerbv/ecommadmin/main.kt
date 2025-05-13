@@ -147,6 +147,7 @@ fun main() = application {
             is Screen.ProductEdit -> {
                 ProductEditScreen(
                     product = currentScreen.product,
+                    viewModel = productEditViewModel,
                     onSaveClick = { updatedProduct ->
                         // Aquí se implementaría la lógica para guardar los cambios
                         // Para este ejemplo, simplemente volvemos a la pantalla de detalle

@@ -1,6 +1,8 @@
 package com.emerbv.ecommadmin.features.products.presentation
 
+import com.emerbv.ecommadmin.core.network.ApiResult
 import com.emerbv.ecommadmin.features.products.data.model.CategoryDto
+import com.emerbv.ecommadmin.features.products.domain.GetAllCategoriesUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,60 +24,53 @@ data class CategoryUiState(
  * ViewModel para la pantalla de edición de productos
  */
 class ProductEditViewModel(
+    private val getAllCategoriesUseCase: GetAllCategoriesUseCase,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     // Estado para las categorías
     private val _categoryState = MutableStateFlow(CategoryUiState(isLoading = true))
     val categoryState: StateFlow<CategoryUiState> = _categoryState.asStateFlow()
 
-    /**
-     * Carga las categorías desde el backend
-     */
     fun loadCategories() {
         scope.launch {
             try {
                 _categoryState.update { it.copy(isLoading = true, errorMessage = null) }
 
-                // Simulamos una llamada al API para cargar las categorías
-                // En una implementación real, aquí llamaríamos al repositorio
-                val categories = fetchCategories()
+                // Realizamos la llamada al API a través del caso de uso
+                getAllCategoriesUseCase().collect { result ->
+                    when (result) {
+                        is ApiResult.Loading -> {
+                            _categoryState.update { it.copy(isLoading = true) }
+                        }
 
-                _categoryState.update {
-                    it.copy(
-                        categories = categories,
-                        isLoading = false,
-                        errorMessage = null
-                    )
+                        is ApiResult.Success -> {
+                            _categoryState.update {
+                                it.copy(
+                                    categories = result.data,
+                                    isLoading = false,
+                                    errorMessage = null
+                                )
+                            }
+                        }
+
+                        is ApiResult.Error -> {
+                            _categoryState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    errorMessage = result.message
+                                )
+                            }
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 _categoryState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Error loading categories: ${e.message}"
+                        errorMessage = "Error cargando categorías: ${e.message}"
                     )
                 }
             }
         }
-    }
-
-    /**
-     * Método que simula obtener las categorías desde el backend
-     * En una implementación real, esto estaría en el repositorio y usaría Retrofit/Ktor
-     */
-    private suspend fun fetchCategories(): List<CategoryDto> {
-        // Simulamos un delay de red
-        kotlinx.coroutines.delay(500)
-
-        // Retornamos una lista de categorías de ejemplo
-        return listOf(
-            CategoryDto(id = 1, name = "Dragon Ball"),
-            CategoryDto(id = 2, name = "One Piece"),
-            CategoryDto(id = 3, name = "Naruto"),
-            CategoryDto(id = 4, name = "Bleach"),
-            CategoryDto(id = 5, name = "Demon Slayer"),
-            CategoryDto(id = 6, name = "My Hero Academia"),
-            CategoryDto(id = 7, name = "Attack on Titan"),
-            CategoryDto(id = 8, name = "Jujutsu Kaisen")
-        )
     }
 }

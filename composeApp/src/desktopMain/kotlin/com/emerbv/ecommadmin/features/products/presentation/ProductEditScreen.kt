@@ -22,7 +22,7 @@ import com.emerbv.ecommadmin.features.products.presentation.ProductEditViewModel
 @Composable
 fun ProductEditScreen(
     product: ProductDto,
-    viewModel: ProductEditViewModel = remember { ProductEditViewModel() },
+    viewModel: ProductEditViewModel,
     onSaveClick: (ProductDto) -> Unit,
     onCancelClick: () -> Unit
 ) {
