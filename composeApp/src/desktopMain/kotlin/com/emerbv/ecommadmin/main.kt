@@ -2,8 +2,10 @@ package com.emerbv.ecommadmin
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import com.emerbv.ecommadmin.core.datastore.CredentialsDataStore
 import com.emerbv.ecommadmin.core.di.appModule
 import com.emerbv.ecommadmin.core.navigation.Screen
@@ -15,8 +17,10 @@ import com.emerbv.ecommadmin.features.auth.presentation.LoginViewModel
 import com.emerbv.ecommadmin.features.dashboard.presentation.DashboardScreen
 import com.emerbv.ecommadmin.features.products.di.productModule
 import com.emerbv.ecommadmin.features.products.presentation.ProductDetailScreen
+import com.emerbv.ecommadmin.features.products.presentation.ProductEditScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
+import com.emerbv.ecommadmin.features.products.presentation.ProductEditViewModel
 import com.russhwolf.settings.PreferencesSettings
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -24,6 +28,11 @@ import org.koin.java.KoinJavaComponent.get
 import java.util.prefs.Preferences
 
 fun main() = application {
+    val state = rememberWindowState(
+        width = 1200.dp,
+        height = 900.dp
+    )
+
     // Configurar preferencias para almacenamiento
     val preferences = Preferences.userNodeForPackage(EcommAdmin::class.java)
     val settings = PreferencesSettings(preferences)
@@ -44,6 +53,7 @@ fun main() = application {
     // Obtener ViewModels
     val loginViewModel = get<LoginViewModel>(LoginViewModel::class.java)
     val productListViewModel = get<ProductListViewModel>(ProductListViewModel::class.java)
+    val productEditViewModel = get<ProductEditViewModel>(ProductEditViewModel::class.java)
     val tokenManagerInstance = get<TokenManager>(TokenManager::class.java)
 
     // Verificar si hay una sesión activa
@@ -65,6 +75,8 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "EcommAdmin",
+        resizable = false,
+        state = state
     ) {
         val navigationState = rememberNavigationState(initialScreen)
         val themeState = rememberThemeState(credentialsDataStore)
@@ -121,7 +133,39 @@ fun main() = application {
                     onBackClick = {
                         navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
                     },
-                    onEditClick = { /* Implementar en el futuro */ }
+                    onEditClick = { product ->
+                        navigationState.navigateTo(
+                            Screen.ProductEdit(
+                                userData = currentScreen.userData,
+                                product = product
+                            )
+                        )
+                    },
+                    onDeleteClick = {}
+                )
+            }
+            is Screen.ProductEdit -> {
+                ProductEditScreen(
+                    product = currentScreen.product,
+                    onSaveClick = { updatedProduct ->
+                        // Aquí se implementaría la lógica para guardar los cambios
+                        // Para este ejemplo, simplemente volvemos a la pantalla de detalle
+                        navigationState.navigateTo(
+                            Screen.ProductDetail(
+                                userData = currentScreen.userData,
+                                product = updatedProduct
+                            )
+                        )
+                    },
+                    onCancelClick = {
+                        // Volver a la pantalla anterior (detalle o lista)
+                        navigationState.navigateTo(
+                            Screen.ProductDetail(
+                                userData = currentScreen.userData,
+                                product = currentScreen.product
+                            )
+                        )
+                    }
                 )
             }
         }

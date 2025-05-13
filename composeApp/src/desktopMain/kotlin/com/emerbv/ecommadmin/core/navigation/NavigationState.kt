@@ -12,6 +12,7 @@ sealed class Screen {
     data class Dashboard(val userData: JwtResponse) : Screen()
     data class ProductList(val userData: JwtResponse) : Screen()
     data class ProductDetail(val userData: JwtResponse, val product: ProductDto) : Screen()
+    data class ProductEdit(val userData: JwtResponse, val product: ProductDto) : Screen()
 }
 
 class NavigationState(
