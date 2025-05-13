@@ -40,11 +40,13 @@ fun DashboardScreen(
                     when (route) {
                         "dashboard" -> {}
                         "products" -> navigationState.navigateTo(Screen.ProductList(userData))
+                        "categories" -> navigationState.navigateTo(Screen.CategoryList(userData))
                         // Agrega más rutas según sea necesario
                     }
                 },
                 userName = "Admin"
             )
+
             // Contenido principal
             Column(
                 modifier = Modifier
@@ -69,10 +71,60 @@ fun DashboardScreen(
                         Icon(Icons.Default.ExitToApp, contentDescription = "Cerrar sesión")
                     }
                 }
+
                 Spacer(Modifier.height(24.dp))
+
                 // KPIs
                 KpiCardsRow()
+
                 Spacer(Modifier.height(24.dp))
+
+                // Accesos directos a las principales secciones
+                Text(
+                    text = "Quick Access",
+                    style = MaterialTheme.typography.h6
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                // Accesos rápidos en forma de tarjetas
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    QuickAccessCard(
+                        icon = Icons.Default.Inventory,
+                        title = "Products",
+                        description = "Manage your products",
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            navigationState.navigateTo(Screen.ProductList(userData))
+                        }
+                    )
+
+                    QuickAccessCard(
+                        icon = Icons.Default.Category,
+                        title = "Categories",
+                        description = "Manage your categories",
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            navigationState.navigateTo(Screen.CategoryList(userData))
+                        }
+                    )
+
+                    QuickAccessCard(
+                        icon = Icons.Default.ShoppingCart,
+                        title = "Orders",
+                        description = "View recent orders",
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            // Implementar navegación a órdenes
+                        }
+                    )
+                }
+
+                Spacer(Modifier.height(24.dp))
+
                 // Listas principales
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Column(Modifier.weight(1f)) {
@@ -82,10 +134,55 @@ fun DashboardScreen(
                         LowInventoryAlertList()
                     }
                 }
+
                 Spacer(Modifier.height(24.dp))
+
                 // Estado de inventario
                 InventoryStatusRow()
             }
+        }
+    }
+}
+
+@Composable
+fun QuickAccessCard(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .height(120.dp)
+            .clickable(onClick = onClick),
+        elevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = MaterialTheme.colors.primary,
+                modifier = Modifier.size(32.dp)
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.h6
+            )
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.caption,
+                color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+            )
         }
     }
 }

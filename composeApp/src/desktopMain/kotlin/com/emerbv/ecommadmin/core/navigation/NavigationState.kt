@@ -5,14 +5,22 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.emerbv.ecommadmin.features.auth.data.model.JwtResponse
+import com.emerbv.ecommadmin.features.categories.data.model.CategoryDto
 import com.emerbv.ecommadmin.features.products.data.model.ProductDto
 
 sealed class Screen {
     data object Login : Screen()
     data class Dashboard(val userData: JwtResponse) : Screen()
+
+    // Product screens
     data class ProductList(val userData: JwtResponse) : Screen()
     data class ProductDetail(val userData: JwtResponse, val product: ProductDto) : Screen()
     data class ProductEdit(val userData: JwtResponse, val product: ProductDto) : Screen()
+
+    // Category screens
+    data class CategoryList(val userData: JwtResponse) : Screen()
+    data class CategoryAdd(val userData: JwtResponse) : Screen()
+    data class CategoryEdit(val userData: JwtResponse, val category: CategoryDto) : Screen()
 }
 
 class NavigationState(

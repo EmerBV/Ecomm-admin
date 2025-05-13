@@ -14,6 +14,12 @@ import com.emerbv.ecommadmin.core.ui.theme.rememberThemeState
 import com.emerbv.ecommadmin.core.utils.TokenManager
 import com.emerbv.ecommadmin.features.auth.presentation.LoginScreenWithRememberMe
 import com.emerbv.ecommadmin.features.auth.presentation.LoginViewModel
+import com.emerbv.ecommadmin.features.categories.di.categoryModule
+import com.emerbv.ecommadmin.features.categories.presentation.CategoryAddScreen
+import com.emerbv.ecommadmin.features.categories.presentation.CategoryEditScreen
+import com.emerbv.ecommadmin.features.categories.presentation.CategoryFormViewModel
+import com.emerbv.ecommadmin.features.categories.presentation.CategoryListScreen
+import com.emerbv.ecommadmin.features.categories.presentation.CategoryListViewModel
 import com.emerbv.ecommadmin.features.dashboard.presentation.DashboardScreen
 import com.emerbv.ecommadmin.features.products.di.productModule
 import com.emerbv.ecommadmin.features.products.presentation.ProductDetailScreen
@@ -45,15 +51,17 @@ fun main() = application {
         single { tokenManager }
     }
 
-    // Inicializar Koin
+    // Inicializar Koin con todos los módulos
     startKoin {
-        modules(appModule, platformModule, productModule)
+        modules(appModule, platformModule, productModule, categoryModule)
     }
 
     // Obtener ViewModels
     val loginViewModel = get<LoginViewModel>(LoginViewModel::class.java)
     val productListViewModel = get<ProductListViewModel>(ProductListViewModel::class.java)
     val productEditViewModel = get<ProductEditViewModel>(ProductEditViewModel::class.java)
+    val categoryListViewModel = get<CategoryListViewModel>(CategoryListViewModel::class.java)
+    val categoryFormViewModel = get<CategoryFormViewModel>(CategoryFormViewModel::class.java)
     val tokenManagerInstance = get<TokenManager>(TokenManager::class.java)
 
     // Verificar si hay una sesión activa
@@ -166,6 +174,42 @@ fun main() = application {
                                 product = currentScreen.product
                             )
                         )
+                    }
+                )
+            }
+            // Nuevas pantallas de categorías
+            is Screen.CategoryList -> {
+                CategoryListScreen(
+                    viewModel = categoryListViewModel,
+                    userData = currentScreen.userData,
+                    navigationState = navigationState,
+                    onBackClick = {
+                        navigationState.navigateTo(Screen.Dashboard(currentScreen.userData))
+                    }
+                )
+            }
+            is Screen.CategoryAdd -> {
+                CategoryAddScreen(
+                    viewModel = categoryFormViewModel,
+                    onSaveComplete = {
+                        // Volver a la lista de categorías después de guardar
+                        navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
+                    },
+                    onCancel = {
+                        navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
+                    }
+                )
+            }
+            is Screen.CategoryEdit -> {
+                CategoryEditScreen(
+                    category = currentScreen.category,
+                    viewModel = categoryFormViewModel,
+                    onSaveComplete = {
+                        // Volver a la lista de categorías después de guardar
+                        navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
+                    },
+                    onCancel = {
+                        navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
                     }
                 )
             }
