@@ -1,7 +1,7 @@
 package com.emerbv.ecommadmin.features.products.presentation
 
 import com.emerbv.ecommadmin.core.network.ApiResult
-import com.emerbv.ecommadmin.features.products.data.model.CategoryDto
+import com.emerbv.ecommadmin.features.categories.data.model.CategoryDto
 import com.emerbv.ecommadmin.features.categories.domain.GetAllCategoriesUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

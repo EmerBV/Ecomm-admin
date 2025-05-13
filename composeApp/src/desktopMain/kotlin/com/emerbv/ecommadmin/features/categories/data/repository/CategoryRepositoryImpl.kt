@@ -3,19 +3,13 @@ package com.emerbv.ecommadmin.features.categories.data.repository
 import com.emerbv.ecommadmin.core.network.ApiResult
 import com.emerbv.ecommadmin.features.categories.data.model.CategoryDto
 import com.emerbv.ecommadmin.features.categories.data.model.CategoryResponse
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.header
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
 import io.ktor.client.request.headers
-import io.ktor.client.request.post
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -39,22 +33,39 @@ class CategoryRepositoryImpl(
             // Agrega logging para depuración
             println("Realizando solicitud de categorías a: $apiPath/all")
 
-            val response: CategoryResponse = httpClient.get("$apiPath/all") {
+            val response = httpClient.get("$apiPath/all") {
                 headers {
                     authHeader?.let { header("Authorization", it) }
                 }
-            }.body()
+            }
 
-            // Imprime la respuesta para depuración
-            println("Respuesta recibida: ${response.message}")
-            println("Categorías recibidas: ${response.data}")
+            // Log de la respuesta bruta para debuggear
+            val responseText = response.bodyAsText()
+            println("Respuesta bruta: $responseText")
 
-            response.data?.let { categories ->
-                emit(ApiResult.Success(categories))
-            } ?: emit(ApiResult.Error("No se encontraron categorías: ${response.message}"))
+            if (response.status.isSuccess()) {
+                val categoryResponse: CategoryResponse = response.body()
+                println("Respuesta parseada: ${categoryResponse.message}")
+                println("Categorías recibidas: ${categoryResponse.data?.size}")
 
+                categoryResponse.data?.let { categories ->
+                    emit(ApiResult.Success(categories))
+                } ?: emit(ApiResult.Error("No se encontraron categorías: ${categoryResponse.message}"))
+            } else {
+                emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}"))
+            }
+
+        } catch (e: ClientRequestException) {
+            println("Error de cliente HTTP: ${e.response.status} - ${e.message}")
+            val errorMessage = when (e.response.status) {
+                HttpStatusCode.Unauthorized -> "Autenticación requerida. Por favor, inicie sesión nuevamente."
+                HttpStatusCode.NotFound -> "No se encontraron categorías"
+                else -> "Error de conexión: ${e.message}"
+            }
+            emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
-            println("Error al obtener categorías: ${e::class.simpleName} - ${e.message}")
+            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Error obteniendo categorías: ${e.message}"))
         }
     }

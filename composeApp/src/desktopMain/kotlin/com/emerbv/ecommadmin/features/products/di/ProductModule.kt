@@ -3,8 +3,6 @@ package com.emerbv.ecommadmin.features.products.di
 import com.emerbv.ecommadmin.core.utils.TokenManager
 import com.emerbv.ecommadmin.features.products.data.repository.ProductRepository
 import com.emerbv.ecommadmin.features.products.data.repository.ProductRepositoryImpl
-import com.emerbv.ecommadmin.features.categories.data.repository.CategoryRepository
-import com.emerbv.ecommadmin.features.categories.data.repository.CategoryRepositoryImpl
 import com.emerbv.ecommadmin.features.products.domain.*
 import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
 import com.emerbv.ecommadmin.features.products.presentation.ProductEditViewModel
@@ -14,7 +12,6 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.factoryOf
-import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val productModule = module {

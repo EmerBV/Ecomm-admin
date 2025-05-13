@@ -1,5 +1,6 @@
 package com.emerbv.ecommadmin.features.products.data.model
 
+import com.emerbv.ecommadmin.features.categories.data.model.CategoryDto
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -27,14 +28,6 @@ data class ProductDto(
     val variants: List<VariantDto>? = null
 )
 
-@Serializable
-data class CategoryDto(
-    val id: Long,
-    val name: String,
-    val imageFileName: String? = null,
-    val imageFileType: String? = null,
-    val imageDownloadUrl: String? = null
-)
 
 @Serializable
 data class ImageDto(
