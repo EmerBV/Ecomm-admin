@@ -16,12 +16,10 @@ import com.emerbv.ecommadmin.core.ui.theme.EcommAdminTheme
 import com.emerbv.ecommadmin.core.utils.TokenManager
 import com.emerbv.ecommadmin.features.auth.data.model.JwtResponse
 import com.emerbv.ecommadmin.features.dashboard.presentation.components.DashboardSidebar
-import com.emerbv.ecommadmin.features.dashboard.presentation.components.KpiCardsRow
 import com.emerbv.ecommadmin.features.dashboard.presentation.components.PopularProductsList
 import com.emerbv.ecommadmin.features.dashboard.presentation.components.LowInventoryAlertList
 import com.emerbv.ecommadmin.features.dashboard.presentation.components.InventoryStatusRow
 import com.emerbv.ecommadmin.features.dashboard.presentation.components.KpiCard
-import org.koin.java.KoinJavaComponent.get
 
 @Composable
 fun DashboardScreen(
