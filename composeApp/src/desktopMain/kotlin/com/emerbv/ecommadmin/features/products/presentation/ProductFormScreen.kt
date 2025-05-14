@@ -22,7 +22,7 @@ import com.emerbv.ecommadmin.features.products.data.model.ProductDto
 fun ProductFormScreen(
     isNewProduct: Boolean,
     initialProduct: ProductDto?,
-    viewModel: ProductEditViewModel,
+    viewModel: ProductFormViewModel,
     onSaveClick: (ProductDto) -> Unit,
     onCancelClick: () -> Unit
 ) {

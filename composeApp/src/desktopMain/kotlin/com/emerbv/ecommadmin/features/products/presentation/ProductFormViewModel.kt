@@ -37,7 +37,7 @@ data class ProductFormState(
 /**
  * ViewModel para la pantalla de edición de productos
  */
-class ProductEditViewModel(
+class ProductFormViewModel(
     private val getAllCategoriesUseCase: GetAllCategoriesUseCase,
     private val addProductUseCase: AddProductUseCase,
     private val updateProductUseCase: UpdateProductUseCase,

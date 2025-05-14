@@ -4,8 +4,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowSize
-import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.emerbv.ecommadmin.core.datastore.CredentialsDataStore
@@ -28,7 +26,7 @@ import com.emerbv.ecommadmin.features.products.presentation.ProductDetailScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductFormScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
-import com.emerbv.ecommadmin.features.products.presentation.ProductEditViewModel
+import com.emerbv.ecommadmin.features.products.presentation.ProductFormViewModel
 import com.russhwolf.settings.PreferencesSettings
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -61,7 +59,7 @@ fun main() = application {
     // Obtener ViewModels
     val loginViewModel = get<LoginViewModel>(LoginViewModel::class.java)
     val productListViewModel = get<ProductListViewModel>(ProductListViewModel::class.java)
-    val productEditViewModel = get<ProductEditViewModel>(ProductEditViewModel::class.java)
+    val productFormViewModel = get<ProductFormViewModel>(ProductFormViewModel::class.java)
     val categoryListViewModel = get<CategoryListViewModel>(CategoryListViewModel::class.java)
     val categoryFormViewModel = get<CategoryFormViewModel>(CategoryFormViewModel::class.java)
     val tokenManagerInstance = get<TokenManager>(TokenManager::class.java)
@@ -144,7 +142,7 @@ fun main() = application {
                 ProductFormScreen(
                     isNewProduct = true,
                     initialProduct = null,
-                    viewModel = productEditViewModel,
+                    viewModel = productFormViewModel,
                     onSaveClick = { newProduct ->
                         navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
                     },
@@ -158,7 +156,7 @@ fun main() = application {
                 ProductFormScreen(
                     isNewProduct = false,
                     initialProduct = currentScreen.product,
-                    viewModel = productEditViewModel,
+                    viewModel = productFormViewModel,
                     onSaveClick = { updatedProduct ->
                         navigationState.navigateTo(
                             Screen.ProductDetail(

@@ -5,7 +5,7 @@ import com.emerbv.ecommadmin.features.products.data.repository.ProductRepository
 import com.emerbv.ecommadmin.features.products.data.repository.ProductRepositoryImpl
 import com.emerbv.ecommadmin.features.products.domain.*
 import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
-import com.emerbv.ecommadmin.features.products.presentation.ProductEditViewModel
+import com.emerbv.ecommadmin.features.products.presentation.ProductFormViewModel
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -59,5 +59,5 @@ val productModule = module {
 
     // ViewModels
     factoryOf(::ProductListViewModel)
-    factoryOf(::ProductEditViewModel)
+    factoryOf(::ProductFormViewModel)
 }
