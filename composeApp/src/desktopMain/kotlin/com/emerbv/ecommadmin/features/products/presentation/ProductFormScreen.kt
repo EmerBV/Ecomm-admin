@@ -54,7 +54,9 @@ fun ProductFormScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Add New Product") },
+                    title = {
+                        Text(if (isNewProduct) "Add New Product" else "Edit Product")
+                    },
                     navigationIcon = {
                         IconButton(onClick = onCancelClick) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -563,7 +565,7 @@ fun ProductFormScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = "Create Product")
+                            Text(text = if (isNewProduct) "Create Product" else "Update Product")
                         }
                     }
                 }

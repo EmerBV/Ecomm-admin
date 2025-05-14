@@ -153,23 +153,6 @@ fun main() = application {
                     }
                 )
             }
-            is Screen.ProductDetail -> {
-                ProductDetailScreen(
-                    product = currentScreen.product,
-                    onBackClick = {
-                        navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
-                    },
-                    onEditClick = { product ->
-                        navigationState.navigateTo(
-                            Screen.ProductEdit(
-                                userData = currentScreen.userData,
-                                product = product
-                            )
-                        )
-                    },
-                    onDeleteClick = {}
-                )
-            }
             is Screen.ProductEdit -> {
                 ProductFormScreen(
                     isNewProduct = false,
@@ -191,6 +174,23 @@ fun main() = application {
                             )
                         )
                     }
+                )
+            }
+            is Screen.ProductDetail -> {
+                ProductDetailScreen(
+                    product = currentScreen.product,
+                    onBackClick = {
+                        navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
+                    },
+                    onEditClick = { product ->
+                        navigationState.navigateTo(
+                            Screen.ProductEdit(
+                                userData = currentScreen.userData,
+                                product = product
+                            )
+                        )
+                    },
+                    onDeleteClick = {}
                 )
             }
             is Screen.CategoryList -> {
