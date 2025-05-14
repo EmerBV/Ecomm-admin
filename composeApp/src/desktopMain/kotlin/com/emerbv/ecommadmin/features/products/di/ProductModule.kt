@@ -54,6 +54,8 @@ val productModule = module {
     factoryOf(::GetBestSellerProductsUseCase)
     factoryOf(::GetMostWishedProductsUseCase)
     factoryOf(::GetRecentProductsUseCase)
+    factoryOf(::AddProductUseCase)
+    factoryOf(::UpdateProductUseCase)
 
     // ViewModels
     factoryOf(::ProductListViewModel)

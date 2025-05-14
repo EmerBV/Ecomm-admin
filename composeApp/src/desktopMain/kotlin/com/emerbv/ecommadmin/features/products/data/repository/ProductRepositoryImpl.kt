@@ -265,4 +265,97 @@ class ProductRepositoryImpl(
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
+
+    override suspend fun addProduct(product: ProductDto): Flow<ApiResult<ProductDto>> = flow {
+        emit(ApiResult.Loading)
+        try {
+            // Convertir ProductDto a formato de solicitud esperado por la API
+            val requestBody = mapOf(
+                "name" to product.name,
+                "brand" to product.brand,
+                "price" to product.price,
+                "inventory" to product.inventory,
+                "description" to product.description,
+                "category" to mapOf("id" to product.category.id, "name" to product.category.name),
+                "discountPercentage" to product.discountPercentage,
+                "status" to product.status,
+                "preOrder" to product.preOrder
+            )
+
+            val response = httpClient.post("$baseUrl/products/add") {
+                headers {
+                    authHeader?.let { header("Authorization", it) }
+                    contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
+                }
+                setBody(requestBody)
+            }
+
+            if (response.status.isSuccess()) {
+                val productResponse: ProductResponse = response.body()
+
+                productResponse.data?.firstOrNull()?.let {
+                    emit(ApiResult.Success(it))
+                } ?: emit(ApiResult.Error("No se pudo crear el producto: ${productResponse.message}"))
+            } else {
+                emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
+            }
+        } catch (e: ClientRequestException) {
+            val errorMessage = when (e.response.status) {
+                HttpStatusCode.Unauthorized -> "No autorizado. Por favor, inicie sesión nuevamente."
+                HttpStatusCode.Conflict -> "Un producto con este nombre y marca ya existe"
+                else -> "Error de conexión: ${e.message}"
+            }
+            emit(ApiResult.Error(errorMessage, e.response.status.value))
+        } catch (e: Exception) {
+            emit(ApiResult.Error("Error inesperado: ${e.message}"))
+        }
+    }
+
+    override suspend fun updateProduct(product: ProductDto): Flow<ApiResult<ProductDto>> = flow {
+        emit(ApiResult.Loading)
+        try {
+            // Convertir ProductDto a formato de solicitud esperado por la API
+            val requestBody = mapOf(
+                "id" to product.id,
+                "name" to product.name,
+                "brand" to product.brand,
+                "price" to product.price,
+                "inventory" to product.inventory,
+                "description" to product.description,
+                "category" to mapOf("id" to product.category.id, "name" to product.category.name),
+                "discountPercentage" to product.discountPercentage,
+                "status" to product.status,
+                "preOrder" to product.preOrder
+            )
+
+            val response = httpClient.put("$baseUrl/products/product/${product.id}/update") {
+                headers {
+                    authHeader?.let { header("Authorization", it) }
+                    contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
+                }
+                setBody(requestBody)
+            }
+
+            if (response.status.isSuccess()) {
+                val productResponse: ProductResponse = response.body()
+
+                productResponse.data?.firstOrNull()?.let {
+                    emit(ApiResult.Success(it))
+                } ?: emit(ApiResult.Error("No se pudo actualizar el producto: ${productResponse.message}"))
+            } else {
+                emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
+            }
+        } catch (e: ClientRequestException) {
+            val errorMessage = when (e.response.status) {
+                HttpStatusCode.Unauthorized -> "No autorizado. Por favor, inicie sesión nuevamente."
+                HttpStatusCode.NotFound -> "Producto no encontrado"
+                else -> "Error de conexión: ${e.message}"
+            }
+            emit(ApiResult.Error(errorMessage, e.response.status.value))
+        } catch (e: Exception) {
+            emit(ApiResult.Error("Error inesperado: ${e.message}"))
+        }
+    }
 }

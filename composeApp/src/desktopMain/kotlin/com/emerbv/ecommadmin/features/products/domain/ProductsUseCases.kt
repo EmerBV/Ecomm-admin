@@ -46,3 +46,15 @@ class GetRecentProductsUseCase(private val repository: ProductRepository) {
         return repository.getRecentProducts()
     }
 }
+
+class AddProductUseCase(private val repository: ProductRepository) {
+    suspend operator fun invoke(product: ProductDto): Flow<ApiResult<ProductDto>> {
+        return repository.addProduct(product)
+    }
+}
+
+class UpdateProductUseCase(private val repository: ProductRepository) {
+    suspend operator fun invoke(product: ProductDto): Flow<ApiResult<ProductDto>> {
+        return repository.updateProduct(product)
+    }
+}

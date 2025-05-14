@@ -16,6 +16,7 @@ sealed class Screen {
     data class ProductList(val userData: JwtResponse) : Screen()
     data class ProductDetail(val userData: JwtResponse, val product: ProductDto) : Screen()
     data class ProductEdit(val userData: JwtResponse, val product: ProductDto) : Screen()
+    data class ProductAdd(val userData: JwtResponse) : Screen()
 
     // Category screens
     data class CategoryList(val userData: JwtResponse) : Screen()

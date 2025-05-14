@@ -12,4 +12,6 @@ interface ProductRepository {
     suspend fun getBestSellerProducts(): Flow<ApiResult<List<ProductDto>>>
     suspend fun getMostWishedProducts(): Flow<ApiResult<List<ProductDto>>>
     suspend fun getRecentProducts(): Flow<ApiResult<List<ProductDto>>>
+    suspend fun addProduct(product: ProductDto): Flow<ApiResult<ProductDto>>
+    suspend fun updateProduct(product: ProductDto): Flow<ApiResult<ProductDto>>
 }

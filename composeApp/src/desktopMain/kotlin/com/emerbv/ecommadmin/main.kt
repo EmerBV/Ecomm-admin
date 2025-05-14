@@ -23,6 +23,7 @@ import com.emerbv.ecommadmin.features.categories.presentation.CategoryListViewMo
 import com.emerbv.ecommadmin.features.dashboard.presentation.DashboardScreen
 import com.emerbv.ecommadmin.features.products.di.productModule
 import com.emerbv.ecommadmin.features.products.presentation.ProductDetailScreen
+import com.emerbv.ecommadmin.features.products.presentation.ProductFormScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductEditScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
@@ -130,8 +131,31 @@ fun main() = application {
                             )
                         )
                     },
+                    onAddProductClick = { // Nuevo callback
+                        navigationState.navigateTo(Screen.ProductAdd(currentScreen.userData))
+                    },
                     onBackClick = {
                         navigationState.navigateTo(Screen.Dashboard(currentScreen.userData))
+                    }
+                )
+            }
+            is Screen.ProductAdd -> {
+                ProductFormScreen(
+                    isNewProduct = true,
+                    initialProduct = null,
+                    viewModel = productEditViewModel,
+                    onSaveClick = { newProduct ->
+                        // Navegar a la pantalla de detalles del nuevo producto
+                        navigationState.navigateTo(
+                            Screen.ProductDetail(
+                                userData = currentScreen.userData,
+                                product = newProduct
+                            )
+                        )
+                    },
+                    onCancelClick = {
+                        // Volver a la lista de productos
+                        navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
                     }
                 )
             }
@@ -153,12 +177,11 @@ fun main() = application {
                 )
             }
             is Screen.ProductEdit -> {
-                ProductEditScreen(
-                    product = currentScreen.product,
+                ProductFormScreen(
+                    isNewProduct = false,
+                    initialProduct = currentScreen.product,
                     viewModel = productEditViewModel,
                     onSaveClick = { updatedProduct ->
-                        // Aquí se implementaría la lógica para guardar los cambios
-                        // Para este ejemplo, simplemente volvemos a la pantalla de detalle
                         navigationState.navigateTo(
                             Screen.ProductDetail(
                                 userData = currentScreen.userData,
@@ -167,7 +190,6 @@ fun main() = application {
                         )
                     },
                     onCancelClick = {
-                        // Volver a la pantalla anterior (detalle o lista)
                         navigationState.navigateTo(
                             Screen.ProductDetail(
                                 userData = currentScreen.userData,
@@ -177,7 +199,6 @@ fun main() = application {
                     }
                 )
             }
-            // Nuevas pantallas de categorías
             is Screen.CategoryList -> {
                 // Debug
                 println("Renderizando CategoryListScreen")

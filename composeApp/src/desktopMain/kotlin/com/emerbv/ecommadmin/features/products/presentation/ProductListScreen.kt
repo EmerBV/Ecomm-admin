@@ -25,6 +25,7 @@ import com.emerbv.ecommadmin.features.products.data.model.ProductDto
 fun ProductListScreen(
     viewModel: ProductListViewModel,
     onProductSelected: (ProductDto) -> Unit,
+    onAddProductClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -83,7 +84,7 @@ fun ProductListScreen(
                         .padding(end = 16.dp, bottom = 16.dp)
                 ) {
                     Button(
-                        onClick = { /* Implementar función para agregar producto */ },
+                        onClick = onAddProductClick,
                         modifier = Modifier.align(Alignment.TopEnd),
                         colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
                     ) {

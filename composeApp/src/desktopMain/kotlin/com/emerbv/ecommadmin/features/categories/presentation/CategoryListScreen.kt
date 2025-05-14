@@ -50,7 +50,7 @@ fun CategoryListScreen(
         ) {
             // Top Bar
             TopAppBar(
-                title = { Text("Categories") },
+                title = { Text("Dashboard") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
