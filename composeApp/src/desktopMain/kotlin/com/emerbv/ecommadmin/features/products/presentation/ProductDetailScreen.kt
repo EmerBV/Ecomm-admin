@@ -2,7 +2,6 @@ package com.emerbv.ecommadmin.features.products.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +46,24 @@ fun ProductDetailScreen(
         variantsUiState.successMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
             variantsViewModel.clearMessages()
+
+            // Si el producto tiene ID, actualizar las variantes
+            product.id?.let { productId ->
+                if (productId > 0) {
+                    variantsViewModel.refreshProductData(productId)
+                }
+            }
+        }
+    }
+
+    // Efecto para mostrar mensajes de error
+    LaunchedEffect(variantsUiState.errorMessage) {
+        variantsUiState.errorMessage?.let { errorMessage ->
+            snackbarHostState.showSnackbar(
+                message = errorMessage,
+                actionLabel = "Dismiss"
+            )
+            // No limpiamos el mensaje de error aquí para dar tiempo a mostrarlo
         }
     }
 
@@ -90,8 +106,11 @@ fun ProductDetailScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                showDeleteDialog?.id?.let { variantsViewModel.deleteVariant(it) }
+                                val variant = showDeleteDialog
                                 showDeleteDialog = null
+                                variant?.id?.let { variantId ->
+                                    variantsViewModel.deleteVariant(variantId)
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
                         ) {
@@ -138,11 +157,7 @@ fun ProductDetailScreen(
                         ) {
                             OutlinedButton(
                                 onClick = { onEditClick(product) },
-                                border = BorderStroke(1.dp, MaterialTheme.colors.primary),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    backgroundColor = Color.Transparent,
-                                    contentColor = MaterialTheme.colors.primary
-                                )
+                                modifier = Modifier.padding(end = 8.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
@@ -251,8 +266,7 @@ fun ProductDetailScreen(
 
                                 OutlinedButton(
                                     onClick = { /* Implement file picker */ },
-                                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                                    border = BorderStroke(1.dp, MaterialTheme.colors.primary)
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
                                 ) {
                                     Text("Choose files")
                                 }
@@ -400,11 +414,14 @@ fun ProductDetailScreen(
                                     color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
                                 )
 
-                                OutlinedButton(
+                                Button(
                                     onClick = {
                                         variantsViewModel.showAddVariantDialog()
                                     },
-                                    border = BorderStroke(1.dp, MaterialTheme.colors.primary)
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = MaterialTheme.colors.primary,
+                                        contentColor = MaterialTheme.colors.onPrimary
+                                    )
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
@@ -459,7 +476,7 @@ fun ProductDetailScreen(
                             Divider()
 
                             // Variant Table Rows
-                            val currentVariants = variantsUiState.variants.ifEmpty { product.variants ?: emptyList() }
+                            val currentVariants = variantsUiState.variants
 
                             if (variantsUiState.isLoading) {
                                 Box(
@@ -574,7 +591,8 @@ fun VariantRow(
 
         Row(
             modifier = Modifier.weight(0.5f),
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
                 onClick = { onEditClick(variant) },

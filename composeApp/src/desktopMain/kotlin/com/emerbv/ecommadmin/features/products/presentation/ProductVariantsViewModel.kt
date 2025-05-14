@@ -47,14 +47,21 @@ class ProductVariantsViewModel(
      * Inicializa el ViewModel con los datos del producto
      */
     fun initWithProduct(product: ProductDto) {
+        val variants = product.variants ?: emptyList()
+
         _uiState.update {
             it.copy(
                 product = product,
-                variants = product.variants ?: emptyList(),
+                variants = variants,
                 isLoading = false,
                 errorMessage = null,
                 successMessage = null
             )
+        }
+
+        // Si el producto tiene ID y no hay variantes, intentamos cargar las variantes desde la API
+        if (product.id > 0 && variants.isEmpty()) {
+            refreshProductData(product.id)
         }
     }
 
@@ -68,14 +75,19 @@ class ProductVariantsViewModel(
             getProductByIdUseCase(productId).collect { result ->
                 when (result) {
                     is ApiResult.Success -> {
+                        val updatedProduct = result.data
+                        val updatedVariants = updatedProduct.variants ?: emptyList()
+
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                product = result.data,
-                                variants = result.data.variants ?: emptyList(),
+                                product = updatedProduct,
+                                variants = updatedVariants,
                                 errorMessage = null
                             )
                         }
+
+                        println("Producto actualizado: ${updatedProduct.name} con ${updatedVariants.size} variantes")
                     }
                     is ApiResult.Error -> {
                         _uiState.update {
@@ -212,13 +224,17 @@ class ProductVariantsViewModel(
             deleteProductVariantUseCase(productId, variantId).collect { result ->
                 when (result) {
                     is ApiResult.Success -> {
-                        refreshProductData(productId)
-                        _uiState.update {
-                            it.copy(
+                        // Actualiza inmediatamente la lista de variantes en el estado UI
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                variants = currentState.variants.filter { it.id != variantId },
                                 isLoading = false,
                                 successMessage = "Variant deleted successfully"
                             )
                         }
+
+                        // Recarga los datos completos del producto después para sincronizar todo
+                        refreshProductData(productId)
                     }
                     is ApiResult.Error -> {
                         _uiState.update {
