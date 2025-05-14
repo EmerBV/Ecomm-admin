@@ -155,6 +155,8 @@ fun ProductFormScreen(
                             ) {
                                 // Price Field
                                 Column(modifier = Modifier.weight(1f)) {
+                                    val hasVariants = currentProduct.variants != null && currentProduct.variants!!.isNotEmpty()
+
                                     Text(
                                         text = "Price",
                                         style = MaterialTheme.typography.body2,
@@ -168,33 +170,35 @@ fun ProductFormScreen(
                                         value = priceText,
                                         onValueChange = { input ->
                                             // Si el campo está vacío o solo contiene un punto decimal, establecemos un valor válido
-                                            val validatedValue = when {
-                                                input.isEmpty() -> {
-                                                    isPriceFieldTouched = true
-                                                    "0" // Evitamos enviar cadenas vacías
-                                                }
-                                                input == "." -> {
-                                                    isPriceFieldTouched = true
-                                                    "0."
-                                                }
-                                                else -> {
-                                                    isPriceFieldTouched = true
-                                                    // Filtramos caracteres no numéricos excepto el punto decimal
-                                                    val filtered = input.filter { char -> char.isDigit() || char == '.' }
-                                                    if (filtered.count { char -> char == '.' } > 1) {
-                                                        val firstDecimalIndex = filtered.indexOf('.')
-                                                        filtered.substring(0, firstDecimalIndex + 1) + filtered.substring(firstDecimalIndex + 1).replace(".", "")
-                                                    } else {
-                                                        filtered
+                                            if (!hasVariants) {
+                                                val validatedValue = when {
+                                                    input.isEmpty() -> {
+                                                        isPriceFieldTouched = true
+                                                        "0" // Evitamos enviar cadenas vacías
+                                                    }
+                                                    input == "." -> {
+                                                        isPriceFieldTouched = true
+                                                        "0."
+                                                    }
+                                                    else -> {
+                                                        isPriceFieldTouched = true
+                                                        // Filtramos caracteres no numéricos excepto el punto decimal
+                                                        val filtered = input.filter { char -> char.isDigit() || char == '.' }
+                                                        if (filtered.count { char -> char == '.' } > 1) {
+                                                            val firstDecimalIndex = filtered.indexOf('.')
+                                                            filtered.substring(0, firstDecimalIndex + 1) + filtered.substring(firstDecimalIndex + 1).replace(".", "")
+                                                        } else {
+                                                            filtered
+                                                        }
                                                     }
                                                 }
-                                            }
 
-                                            priceText = validatedValue
+                                                priceText = validatedValue
 
-                                            // Solo actualizamos el modelo cuando el valor es válido
-                                            validatedValue.toDoubleOrNull()?.let { doubleValue ->
-                                                viewModel.updateProductField(price = doubleValue)
+                                                // Solo actualizamos el modelo cuando el valor es válido
+                                                validatedValue.toDoubleOrNull()?.let { doubleValue ->
+                                                    viewModel.updateProductField(price = doubleValue)
+                                                }
                                             }
                                         },
                                         modifier = Modifier
@@ -209,9 +213,22 @@ fun ProductFormScreen(
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                         colors = TextFieldDefaults.outlinedTextFieldColors(
                                             focusedBorderColor = MaterialTheme.colors.primary,
-                                            unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.2f)
-                                        )
+                                            unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.2f),
+                                            disabledTextColor = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                                            disabledBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.3f)
+                                        ),
+                                        readOnly = hasVariants,
+                                        enabled = !hasVariants
                                     )
+
+                                    if (hasVariants) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Price is managed through variants",
+                                            style = MaterialTheme.typography.caption,
+                                            color = MaterialTheme.colors.secondary
+                                        )
+                                    }
                                 }
 
                                 // Inventory Field
