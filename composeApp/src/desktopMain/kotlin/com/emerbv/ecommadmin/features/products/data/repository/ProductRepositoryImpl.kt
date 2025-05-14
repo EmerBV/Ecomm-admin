@@ -11,6 +11,8 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.*
 
 class ProductRepositoryImpl(
     private val httpClient: HttpClient,
@@ -24,62 +26,25 @@ class ProductRepositoryImpl(
     override suspend fun getAllProducts(): Flow<ApiResult<List<ProductDto>>> = flow {
         emit(ApiResult.Loading)
         try {
-            println("Realizando solicitud de productos a: $baseUrl/products/all")
-
             val response = httpClient.get("$baseUrl/products/all") {
                 headers {
-                    // Para rutas públicas, no necesitamos autenticación
-                    // pero mantenemos las cabeceras de contenido
                     header("Content-Type", "application/json")
                     header("Accept", "application/json")
                 }
             }
 
-            // Imprime información detallada sobre la respuesta para depuración
-            println("Código de estado de respuesta: ${response.status}")
-            println("Cabeceras de respuesta: ${response.headers}")
-
-            val responseText = response.bodyAsText()
-            println("Cuerpo de la respuesta: $responseText")
-
             if (response.status.isSuccess()) {
                 val productResponse: ProductResponse = response.body()
-                println("Respuesta parseada: ${productResponse.message}")
+                val products = productResponse.getProducts()
 
-                productResponse.data?.let {
-                    println("Productos obtenidos: ${it.size}")
-                    emit(ApiResult.Success(it))
-                } ?: emit(ApiResult.Error("No se encontraron productos: ${productResponse.message}"))
+                emit(ApiResult.Success(products))
             } else {
-                // Si el estado no es exitoso, lo manejamos específicamente
-                when (response.status) {
-                    HttpStatusCode.Unauthorized -> {
-                        emit(ApiResult.Error("Error en la solicitud", 401))
-                    }
-                    else -> {
-                        emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
-                    }
-                }
+                emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
-
-        } catch (e: ClientRequestException) {
-            println("Error de cliente: ${e.message}")
-            println("Estado de respuesta: ${e.response.status}")
-
-            val errorMessage = when (e.response.status) {
-                HttpStatusCode.Unauthorized -> "Error en la solicitud"
-                HttpStatusCode.NotFound -> "No se encontraron productos"
-                else -> "Error de conexión: ${e.message}"
-            }
-            emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
-            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
-            e.printStackTrace()
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
-
-    // Resto de métodos del repositorio que no requieren autenticación...
 
     override suspend fun getProductById(id: Long): Flow<ApiResult<ProductDto>> = flow {
         emit(ApiResult.Loading)
@@ -94,12 +59,18 @@ class ProductRepositoryImpl(
             if (response.status.isSuccess()) {
                 val productResponse: ProductResponse = response.body()
 
-                productResponse.data?.firstOrNull()?.let {
-                    emit(ApiResult.Success(it))
-                } ?: emit(ApiResult.Error("Producto no encontrado"))
+                val product = productResponse.getProduct()
+                if (product != null) {
+                    emit(ApiResult.Success(product))
+                } else {
+                    emit(ApiResult.Error("Producto no encontrado"))
+                }
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
+        } catch (e: SerializationException) {
+            println("Error de serialización: ${e.message}")
+            emit(ApiResult.Error("Error al procesar la respuesta del servidor: ${e.message}"))
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
                 HttpStatusCode.NotFound -> "Producto no encontrado"
@@ -107,6 +78,8 @@ class ProductRepositoryImpl(
             }
             emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
+            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
@@ -124,13 +97,15 @@ class ProductRepositoryImpl(
 
             if (response.status.isSuccess()) {
                 val productResponse: ProductResponse = response.body()
+                val products = productResponse.getProducts()
 
-                productResponse.data?.let {
-                    emit(ApiResult.Success(it))
-                } ?: emit(ApiResult.Error("No se encontraron productos en esta categoría"))
+                emit(ApiResult.Success(products))
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
+        } catch (e: SerializationException) {
+            println("Error de serialización: ${e.message}")
+            emit(ApiResult.Error("Error al procesar la respuesta del servidor: ${e.message}"))
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
                 HttpStatusCode.NotFound -> "No se encontraron productos en esta categoría"
@@ -138,11 +113,11 @@ class ProductRepositoryImpl(
             }
             emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
+            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
-
-    // Método que podrían necesitar autenticación
 
     override suspend fun getProductsByStatus(status: String): Flow<ApiResult<List<ProductDto>>> = flow {
         emit(ApiResult.Loading)
@@ -157,13 +132,15 @@ class ProductRepositoryImpl(
 
             if (response.status.isSuccess()) {
                 val productResponse: ProductResponse = response.body()
+                val products = productResponse.getProducts()
 
-                productResponse.data?.let {
-                    emit(ApiResult.Success(it))
-                } ?: emit(ApiResult.Error("No se encontraron productos con este estado"))
+                emit(ApiResult.Success(products))
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
+        } catch (e: SerializationException) {
+            println("Error de serialización: ${e.message}")
+            emit(ApiResult.Error("Error al procesar la respuesta del servidor: ${e.message}"))
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
                 HttpStatusCode.Unauthorized -> "No autorizado. Por favor, inicie sesión nuevamente."
@@ -172,6 +149,8 @@ class ProductRepositoryImpl(
             }
             emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
+            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
@@ -188,13 +167,15 @@ class ProductRepositoryImpl(
 
             if (response.status.isSuccess()) {
                 val productResponse: ProductResponse = response.body()
+                val products = productResponse.getProducts()
 
-                productResponse.data?.let {
-                    emit(ApiResult.Success(it))
-                } ?: emit(ApiResult.Error("No se encontraron productos destacados"))
+                emit(ApiResult.Success(products))
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
+        } catch (e: SerializationException) {
+            println("Error de serialización: ${e.message}")
+            emit(ApiResult.Error("Error al procesar la respuesta del servidor: ${e.message}"))
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
                 HttpStatusCode.NotFound -> "No se encontraron productos destacados"
@@ -202,6 +183,8 @@ class ProductRepositoryImpl(
             }
             emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
+            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
@@ -218,13 +201,15 @@ class ProductRepositoryImpl(
 
             if (response.status.isSuccess()) {
                 val productResponse: ProductResponse = response.body()
+                val products = productResponse.getProducts()
 
-                productResponse.data?.let {
-                    emit(ApiResult.Success(it))
-                } ?: emit(ApiResult.Error("No se encontraron productos deseados"))
+                emit(ApiResult.Success(products))
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
+        } catch (e: SerializationException) {
+            println("Error de serialización: ${e.message}")
+            emit(ApiResult.Error("Error al procesar la respuesta del servidor: ${e.message}"))
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
                 HttpStatusCode.NotFound -> "No se encontraron productos deseados"
@@ -232,6 +217,8 @@ class ProductRepositoryImpl(
             }
             emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
+            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
@@ -248,13 +235,15 @@ class ProductRepositoryImpl(
 
             if (response.status.isSuccess()) {
                 val productResponse: ProductResponse = response.body()
+                val products = productResponse.getProducts()
 
-                productResponse.data?.let {
-                    emit(ApiResult.Success(it))
-                } ?: emit(ApiResult.Error("No se encontraron productos recientes"))
+                emit(ApiResult.Success(products))
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
+        } catch (e: SerializationException) {
+            println("Error de serialización: ${e.message}")
+            emit(ApiResult.Error("Error al procesar la respuesta del servidor: ${e.message}"))
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
                 HttpStatusCode.NotFound -> "No se encontraron productos recientes"
@@ -262,6 +251,8 @@ class ProductRepositoryImpl(
             }
             emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
+            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
@@ -269,8 +260,9 @@ class ProductRepositoryImpl(
     override suspend fun addProduct(product: ProductDto): Flow<ApiResult<ProductDto>> = flow {
         emit(ApiResult.Loading)
         try {
+            // Crear un ProductDto modificado, similar al que recibimos del servidor
             val productToSend = product.copy(
-                id = 0L,
+                id = 0L, // El id será asignado por el servidor
                 variants = emptyList(),
                 images = emptyList(),
                 salesCount = 0,
@@ -290,12 +282,21 @@ class ProductRepositoryImpl(
             if (response.status.isSuccess()) {
                 val productResponse: ProductResponse = response.body()
 
-                productResponse.data?.firstOrNull()?.let {
-                    emit(ApiResult.Success(it))
-                } ?: emit(ApiResult.Error("No se pudo crear el producto: ${productResponse.message}"))
+                // Usar la nueva función getProduct para extraer el producto
+                val newProduct = productResponse.getProduct()
+
+                if (newProduct != null) {
+                    emit(ApiResult.Success(newProduct))
+                } else {
+                    emit(ApiResult.Error("No se pudo crear el producto: ${productResponse.message}"))
+                }
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
+        } catch (e: SerializationException) {
+            // Log detallado para errores de serialización
+            println("Error de serialización: ${e.message}")
+            emit(ApiResult.Error("Error al procesar la respuesta del servidor: ${e.message}"))
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
                 HttpStatusCode.Unauthorized -> "No autorizado. Por favor, inicie sesión nuevamente."
@@ -304,6 +305,9 @@ class ProductRepositoryImpl(
             }
             emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
+            // Log para errores generales
+            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
@@ -311,38 +315,31 @@ class ProductRepositoryImpl(
     override suspend fun updateProduct(product: ProductDto): Flow<ApiResult<ProductDto>> = flow {
         emit(ApiResult.Loading)
         try {
-            // Convertir ProductDto a formato de solicitud esperado por la API
-            val requestBody = mapOf(
-                "id" to product.id,
-                "name" to product.name,
-                "brand" to product.brand,
-                "price" to product.price,
-                "inventory" to product.inventory,
-                "description" to product.description,
-                "category" to mapOf("id" to product.category.id, "name" to product.category.name),
-                "discountPercentage" to product.discountPercentage,
-                "status" to product.status,
-                "preOrder" to product.preOrder
-            )
-
+            // Enviar directamente el ProductDto, sin convertirlo a un mapa
             val response = httpClient.put("$baseUrl/products/product/${product.id}/update") {
                 headers {
                     authHeader?.let { header("Authorization", it) }
                     contentType(ContentType.Application.Json)
                     accept(ContentType.Application.Json)
                 }
-                setBody(requestBody)
+                setBody(product)
             }
 
             if (response.status.isSuccess()) {
                 val productResponse: ProductResponse = response.body()
 
-                productResponse.data?.firstOrNull()?.let {
-                    emit(ApiResult.Success(it))
-                } ?: emit(ApiResult.Error("No se pudo actualizar el producto: ${productResponse.message}"))
+                val updatedProduct = productResponse.getProduct()
+                if (updatedProduct != null) {
+                    emit(ApiResult.Success(updatedProduct))
+                } else {
+                    emit(ApiResult.Error("No se pudo actualizar el producto: ${productResponse.message}"))
+                }
             } else {
                 emit(ApiResult.Error("Error en la respuesta del servidor: ${response.status}", response.status.value))
             }
+        } catch (e: SerializationException) {
+            println("Error de serialización: ${e.message}")
+            emit(ApiResult.Error("Error al procesar la respuesta del servidor: ${e.message}"))
         } catch (e: ClientRequestException) {
             val errorMessage = when (e.response.status) {
                 HttpStatusCode.Unauthorized -> "No autorizado. Por favor, inicie sesión nuevamente."
@@ -351,6 +348,8 @@ class ProductRepositoryImpl(
             }
             emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
+            println("Error inesperado: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }

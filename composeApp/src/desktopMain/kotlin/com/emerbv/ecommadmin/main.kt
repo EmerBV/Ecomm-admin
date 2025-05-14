@@ -145,13 +145,7 @@ fun main() = application {
                     initialProduct = null,
                     viewModel = productEditViewModel,
                     onSaveClick = { newProduct ->
-                        // Navegar a la pantalla de detalles del nuevo producto
-                        navigationState.navigateTo(
-                            Screen.ProductDetail(
-                                userData = currentScreen.userData,
-                                product = newProduct
-                            )
-                        )
+                        navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
                     },
                     onCancelClick = {
                         // Volver a la lista de productos
