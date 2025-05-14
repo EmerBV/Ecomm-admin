@@ -175,6 +175,19 @@ class ProductFormViewModel(
             currentProduct.category
         }
 
+        // Determinar el nuevo valor de inventario
+        val newInventory = inventory ?: currentProduct.inventory
+
+        // Definir el estado automáticamente basado en el inventario, a menos que
+        // se proporcione explícitamente un valor para status
+        val newStatus = if (status != null) {
+            status
+        } else if (newInventory <= 0) {
+            "OUT_OF_STOCK"
+        } else {
+            "IN_STOCK"
+        }
+
         val updatedProduct = currentProduct.copy(
             name = name ?: currentProduct.name,
             brand = brand ?: currentProduct.brand,
@@ -183,7 +196,7 @@ class ProductFormViewModel(
             description = description ?: currentProduct.description,
             category = newCategory,
             discountPercentage = discountPercentage ?: currentProduct.discountPercentage,
-            status = status ?: currentProduct.status,
+            status = newStatus,
             preOrder = preOrder ?: currentProduct.preOrder
         )
 
@@ -195,6 +208,19 @@ class ProductFormViewModel(
      */
     fun saveProduct() {
         val productToSave = _productState.value.product ?: return
+
+        // Asegurarse de que el estado es correcto basado en el inventario total
+        val finalProduct = if (productToSave.variants?.isNotEmpty() == true) {
+            // Si tiene variantes, calcular el inventario total de las variantes
+            val totalInventory = productToSave.variants.sumOf { it.inventory }
+            val correctStatus = if (totalInventory <= 0) "OUT_OF_STOCK" else "IN_STOCK"
+            productToSave.copy(status = correctStatus)
+        } else {
+            // Si no tiene variantes, usar el inventario del producto
+            val correctStatus = if (productToSave.inventory <= 0) "OUT_OF_STOCK" else "IN_STOCK"
+            productToSave.copy(status = correctStatus)
+        }
+
         val isNew = _productState.value.isNew
 
         _productState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -202,9 +228,9 @@ class ProductFormViewModel(
         scope.launch {
             try {
                 val result = if (isNew) {
-                    addProductUseCase(productToSave)
+                    addProductUseCase(finalProduct)
                 } else {
-                    updateProductUseCase(productToSave)
+                    updateProductUseCase(finalProduct)
                 }
 
                 result.collect { apiResult ->

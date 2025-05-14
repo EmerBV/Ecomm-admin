@@ -216,6 +216,8 @@ fun ProductFormScreen(
 
                                 // Inventory Field
                                 Column(modifier = Modifier.weight(1f)) {
+                                    val hasVariants = currentProduct.variants != null && currentProduct.variants!!.isNotEmpty()
+
                                     Text(
                                         text = "Inventory",
                                         style = MaterialTheme.typography.body2,
@@ -228,28 +230,31 @@ fun ProductFormScreen(
                                     OutlinedTextField(
                                         value = inventoryText,
                                         onValueChange = { input ->
-                                            val validatedValue = when {
-                                                input.isEmpty() -> {
-                                                    isInventoryFieldTouched = true
-                                                    "0"
+                                            // Solo permitir cambios si no hay variantes
+                                            if (!hasVariants) {
+                                                val validatedValue = when {
+                                                    input.isEmpty() -> {
+                                                        isInventoryFieldTouched = true
+                                                        "0"
+                                                    }
+                                                    else -> {
+                                                        isInventoryFieldTouched = true
+                                                        // Solo permitimos dígitos para el inventario
+                                                        input.filter { char -> char.isDigit() }
+                                                    }
                                                 }
-                                                else -> {
-                                                    isInventoryFieldTouched = true
-                                                    // Solo permitimos dígitos para el inventario
-                                                    input.filter { char -> char.isDigit() }
+
+                                                inventoryText = validatedValue
+
+                                                validatedValue.toIntOrNull()?.let { intValue ->
+                                                    viewModel.updateProductField(inventory = intValue)
                                                 }
-                                            }
-
-                                            inventoryText = validatedValue
-
-                                            validatedValue.toIntOrNull()?.let { intValue ->
-                                                viewModel.updateProductField(inventory = intValue)
                                             }
                                         },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .onFocusChanged { focused ->
-                                                if (focused.isFocused && !isInventoryFieldTouched && inventoryText == "0") {
+                                                if (focused.isFocused && !isInventoryFieldTouched && inventoryText == "0" && !hasVariants) {
                                                     inventoryText = ""
                                                     isInventoryFieldTouched = true
                                                 }
@@ -258,9 +263,22 @@ fun ProductFormScreen(
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         colors = TextFieldDefaults.outlinedTextFieldColors(
                                             focusedBorderColor = MaterialTheme.colors.primary,
-                                            unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.2f)
-                                        )
+                                            unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.2f),
+                                            disabledTextColor = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                                            disabledBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.3f)
+                                        ),
+                                        readOnly = hasVariants,
+                                        enabled = !hasVariants
                                     )
+
+                                    if (hasVariants) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Inventory is managed through variants",
+                                            style = MaterialTheme.typography.caption,
+                                            color = MaterialTheme.colors.secondary
+                                        )
+                                    }
                                 }
                             }
 
