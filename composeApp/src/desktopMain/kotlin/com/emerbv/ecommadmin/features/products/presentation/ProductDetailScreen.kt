@@ -22,14 +22,38 @@ import androidx.compose.ui.unit.dp
 import com.emerbv.ecommadmin.core.ui.theme.EcommAdminTheme
 import com.emerbv.ecommadmin.features.products.data.model.ProductDto
 import com.emerbv.ecommadmin.features.products.data.model.VariantDto
+import com.emerbv.ecommadmin.features.products.presentation.components.ProductVariantDialog
+import com.emerbv.ecommadmin.features.products.presentation.components.VariantFormState
+import kotlinx.coroutines.flow.collectLatest
+import org.koin.java.KoinJavaComponent.get
 
 @Composable
 fun ProductDetailScreen(
     product: ProductDto,
+    variantsViewModel: ProductVariantsViewModel,
     onBackClick: () -> Unit,
     onEditClick: (ProductDto) -> Unit,
     onDeleteClick: (ProductDto) -> Unit
 ) {
+    val variantsUiState by variantsViewModel.uiState.collectAsState()
+
+    // Inicializar el ViewModel con los datos del producto
+    LaunchedEffect(product) {
+        variantsViewModel.initWithProduct(product)
+    }
+
+    // Monitorear mensajes de éxito para mostrar SnackBar
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(variantsUiState.successMessage) {
+        variantsUiState.successMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            variantsViewModel.clearMessages()
+        }
+    }
+
+    // Estado para el diálogo de confirmación de eliminación
+    var showDeleteDialog by remember { mutableStateOf<VariantDto?>(null) }
+
     EcommAdminTheme {
         Scaffold(
             topBar = {
@@ -43,8 +67,45 @@ fun ProductDetailScreen(
                     backgroundColor = MaterialTheme.colors.background,
                     elevation = 0.dp
                 )
-            }
+            },
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
         ) { paddingValues ->
+
+            // Mostrar diálogo de variante si está visible
+            if (variantsUiState.isDialogVisible) {
+                ProductVariantDialog(
+                    isVisible = true,
+                    variant = variantsUiState.currentVariant,
+                    onDismiss = { variantsViewModel.hideDialog() },
+                    onSave = { formState -> variantsViewModel.saveVariant(formState) }
+                )
+            }
+
+            // Diálogo de confirmación para eliminar variante
+            if (showDeleteDialog != null) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = null },
+                    title = { Text("Delete Variant") },
+                    text = { Text("Are you sure you want to delete the variant '${showDeleteDialog?.name}'? This action cannot be undone.") },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showDeleteDialog?.id?.let { variantsViewModel.deleteVariant(it) }
+                                showDeleteDialog = null
+                            },
+                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
+                        ) {
+                            Text("Delete")
+                        }
+                    },
+                    dismissButton = {
+                        OutlinedButton(onClick = { showDeleteDialog = null }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -340,7 +401,9 @@ fun ProductDetailScreen(
                                 )
 
                                 OutlinedButton(
-                                    onClick = { /* Implement add variant */ },
+                                    onClick = {
+                                        variantsViewModel.showAddVariantDialog()
+                                    },
                                     border = BorderStroke(1.dp, MaterialTheme.colors.primary)
                                 ) {
                                     Icon(
@@ -396,14 +459,27 @@ fun ProductDetailScreen(
                             Divider()
 
                             // Variant Table Rows
-                            if (product.variants != null && product.variants.isNotEmpty()) {
-                                product.variants.forEach { variant ->
-                                    VariantRow(
-                                        variant = variant,
-                                        onEditClick = { /* Implement edit variant */ },
-                                        onDeleteClick = { /* Implement delete variant */ }
-                                    )
-                                    Divider()
+                            val currentVariants = variantsUiState.variants.ifEmpty { product.variants ?: emptyList() }
+
+                            if (variantsUiState.isLoading) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(120.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            } else if (currentVariants.isNotEmpty()) {
+                                Column {
+                                    currentVariants.forEach { variant ->
+                                        VariantRow(
+                                            variant = variant,
+                                            onEditClick = { variantsViewModel.showEditVariantDialog(variant) },
+                                            onDeleteClick = { showDeleteDialog = variant }
+                                        )
+                                        Divider()
+                                    }
                                 }
                             } else {
                                 Box(
@@ -418,6 +494,17 @@ fun ProductDetailScreen(
                                         color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
                                     )
                                 }
+                            }
+
+                            // Error message
+                            if (variantsUiState.errorMessage != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = variantsUiState.errorMessage ?: "",
+                                    style = MaterialTheme.typography.caption,
+                                    color = MaterialTheme.colors.error,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
                     }

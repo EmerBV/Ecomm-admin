@@ -2,6 +2,7 @@ package com.emerbv.ecommadmin.features.products.data.repository
 
 import com.emerbv.ecommadmin.core.network.ApiResult
 import com.emerbv.ecommadmin.features.products.data.model.ProductDto
+import com.emerbv.ecommadmin.features.products.data.model.VariantDto
 import kotlinx.coroutines.flow.Flow
 
 interface ProductRepository {
@@ -14,4 +15,8 @@ interface ProductRepository {
     suspend fun getRecentProducts(): Flow<ApiResult<List<ProductDto>>>
     suspend fun addProduct(product: ProductDto): Flow<ApiResult<ProductDto>>
     suspend fun updateProduct(product: ProductDto): Flow<ApiResult<ProductDto>>
+
+    suspend fun addProductVariant(productId: Long, variant: VariantDto): Flow<ApiResult<VariantDto>>
+    suspend fun updateProductVariant(productId: Long, variant: VariantDto): Flow<ApiResult<VariantDto>>
+    suspend fun deleteProductVariant(productId: Long, variantId: Long): Flow<ApiResult<Boolean>>
 }

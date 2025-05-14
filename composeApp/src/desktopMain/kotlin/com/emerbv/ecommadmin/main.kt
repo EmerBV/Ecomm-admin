@@ -27,6 +27,7 @@ import com.emerbv.ecommadmin.features.products.presentation.ProductFormScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
 import com.emerbv.ecommadmin.features.products.presentation.ProductFormViewModel
+import com.emerbv.ecommadmin.features.products.presentation.ProductVariantsViewModel
 import com.russhwolf.settings.PreferencesSettings
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -60,6 +61,7 @@ fun main() = application {
     val loginViewModel = get<LoginViewModel>(LoginViewModel::class.java)
     val productListViewModel = get<ProductListViewModel>(ProductListViewModel::class.java)
     val productFormViewModel = get<ProductFormViewModel>(ProductFormViewModel::class.java)
+    val productVariantsViewModel = get<ProductVariantsViewModel>(ProductVariantsViewModel::class.java)
     val categoryListViewModel = get<CategoryListViewModel>(CategoryListViewModel::class.java)
     val categoryFormViewModel = get<CategoryFormViewModel>(CategoryFormViewModel::class.java)
     val tokenManagerInstance = get<TokenManager>(TokenManager::class.java)
@@ -176,8 +178,11 @@ fun main() = application {
                 )
             }
             is Screen.ProductDetail -> {
+                productVariantsViewModel.initWithProduct(currentScreen.product)
+
                 ProductDetailScreen(
                     product = currentScreen.product,
+                    variantsViewModel = productVariantsViewModel,
                     onBackClick = {
                         navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
                     },

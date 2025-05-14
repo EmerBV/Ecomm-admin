@@ -2,7 +2,9 @@ package com.emerbv.ecommadmin.features.products.data.repository
 
 import com.emerbv.ecommadmin.core.network.ApiResult
 import com.emerbv.ecommadmin.features.products.data.model.ProductDto
+import com.emerbv.ecommadmin.features.products.data.model.VariantDto
 import com.emerbv.ecommadmin.features.products.data.model.ProductResponse
+import com.emerbv.ecommadmin.features.products.data.model.VariantResponse
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -353,4 +355,112 @@ class ProductRepositoryImpl(
             emit(ApiResult.Error("Error inesperado: ${e.message}"))
         }
     }
+
+    override suspend fun addProductVariant(productId: Long, variant: VariantDto): Flow<ApiResult<VariantDto>> = flow {
+        emit(ApiResult.Loading)
+        try {
+            val response = httpClient.post("$baseUrl/variants/variant/add?productId=$productId") {
+                headers {
+                    authHeader?.let { header("Authorization", it) }
+                    contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
+                }
+                setBody(variant)
+            }
+
+            if (response.status.isSuccess()) {
+                val variantResponse: VariantResponse = response.body()
+                val data = variantResponse.data
+
+                if (data != null) {
+                    emit(ApiResult.Success(data))
+                } else {
+                    emit(ApiResult.Error("Error al añadir la variante: ${variantResponse.message}"))
+                }
+            } else {
+                val errorText = response.bodyAsText()
+                emit(ApiResult.Error("Error del servidor: ${response.status} - $errorText", response.status.value))
+            }
+        } catch (e: SerializationException) {
+            emit(ApiResult.Error("Error de formato: ${e.message}"))
+        } catch (e: ClientRequestException) {
+            val errorMessage = when (e.response.status) {
+                HttpStatusCode.Unauthorized -> "No autorizado. Por favor, inicie sesión nuevamente."
+                HttpStatusCode.Conflict -> "Ya existe una variante con este nombre para este producto"
+                else -> "Error de conexión: ${e.message}"
+            }
+            emit(ApiResult.Error(errorMessage, e.response.status.value))
+        } catch (e: Exception) {
+            emit(ApiResult.Error("Error inesperado: ${e.message}"))
+        }
+    }
+
+    override suspend fun updateProductVariant(productId: Long, variant: VariantDto): Flow<ApiResult<VariantDto>> = flow {
+        emit(ApiResult.Loading)
+        try {
+            val response = httpClient.put("$baseUrl/variants/variant/${variant.id}/update") {
+                headers {
+                    authHeader?.let { header("Authorization", it) }
+                    contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
+                }
+                setBody(variant)
+            }
+
+            if (response.status.isSuccess()) {
+                val variantResponse: VariantResponse = response.body()
+                val data = variantResponse.data
+
+                if (data != null) {
+                    emit(ApiResult.Success(data))
+                } else {
+                    emit(ApiResult.Error("Error al actualizar la variante: ${variantResponse.message}"))
+                }
+            } else {
+                val errorText = response.bodyAsText()
+                emit(ApiResult.Error("Error del servidor: ${response.status} - $errorText", response.status.value))
+            }
+        } catch (e: SerializationException) {
+            emit(ApiResult.Error("Error de formato: ${e.message}"))
+        } catch (e: ClientRequestException) {
+            val errorMessage = when (e.response.status) {
+                HttpStatusCode.Unauthorized -> "No autorizado. Por favor, inicie sesión nuevamente."
+                HttpStatusCode.NotFound -> "No se encontró la variante"
+                HttpStatusCode.Conflict -> "Ya existe una variante con este nombre para este producto"
+                else -> "Error de conexión: ${e.message}"
+            }
+            emit(ApiResult.Error(errorMessage, e.response.status.value))
+        } catch (e: Exception) {
+            emit(ApiResult.Error("Error inesperado: ${e.message}"))
+        }
+    }
+
+    override suspend fun deleteProductVariant(productId: Long, variantId: Long): Flow<ApiResult<Boolean>> = flow {
+        emit(ApiResult.Loading)
+        try {
+            val response = httpClient.delete("$baseUrl/variants/variant/$variantId/delete") {
+                headers {
+                    authHeader?.let { header("Authorization", it) }
+                    accept(ContentType.Application.Json)
+                }
+            }
+
+            if (response.status.isSuccess()) {
+                emit(ApiResult.Success(true))
+            } else {
+                val errorText = response.bodyAsText()
+                emit(ApiResult.Error("Error del servidor: ${response.status} - $errorText", response.status.value))
+            }
+        } catch (e: ClientRequestException) {
+            val errorMessage = when (e.response.status) {
+                HttpStatusCode.Unauthorized -> "No autorizado. Por favor, inicie sesión nuevamente."
+                HttpStatusCode.NotFound -> "No se encontró la variante"
+                else -> "Error de conexión: ${e.message}"
+            }
+            emit(ApiResult.Error(errorMessage, e.response.status.value))
+        } catch (e: Exception) {
+            emit(ApiResult.Error("Error inesperado: ${e.message}"))
+        }
+    }
+
 }

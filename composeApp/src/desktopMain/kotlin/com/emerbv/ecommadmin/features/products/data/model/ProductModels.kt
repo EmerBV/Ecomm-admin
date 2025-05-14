@@ -63,10 +63,3 @@ data class ImageDto(
     val downloadUrl: String? = null
 )
 
-@Serializable
-data class VariantDto(
-    val id: Long,
-    val name: String,
-    val price: Double,
-    val inventory: Int = 0
-)

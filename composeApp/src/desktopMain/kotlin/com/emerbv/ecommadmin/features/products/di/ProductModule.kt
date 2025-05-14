@@ -6,6 +6,7 @@ import com.emerbv.ecommadmin.features.products.data.repository.ProductRepository
 import com.emerbv.ecommadmin.features.products.domain.*
 import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
 import com.emerbv.ecommadmin.features.products.presentation.ProductFormViewModel
+import com.emerbv.ecommadmin.features.products.presentation.ProductVariantsViewModel
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -46,7 +47,7 @@ val productModule = module {
         )
     }
 
-    // Casos de uso
+    // Casos de uso para productos
     factoryOf(::GetAllProductsUseCase)
     factoryOf(::GetProductByIdUseCase)
     factoryOf(::GetProductsByCategoryUseCase)
@@ -57,7 +58,13 @@ val productModule = module {
     factoryOf(::AddProductUseCase)
     factoryOf(::UpdateProductUseCase)
 
+    // Casos de uso para variantes
+    factoryOf(::AddProductVariantUseCase)
+    factoryOf(::UpdateProductVariantUseCase)
+    factoryOf(::DeleteProductVariantUseCase)
+
     // ViewModels
     factoryOf(::ProductListViewModel)
     factoryOf(::ProductFormViewModel)
+    factoryOf(::ProductVariantsViewModel)
 }
