@@ -1,7 +1,5 @@
 package com.emerbv.ecommadmin.features.products.presentation
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -12,6 +10,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -160,15 +159,52 @@ fun ProductFormScreen(
                                         color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
                                     )
 
+                                    var priceText by remember { mutableStateOf(currentProduct.price.toString()) }
+                                    var isPriceFieldTouched by remember { mutableStateOf(false) }
+
                                     OutlinedTextField(
-                                        value = currentProduct.price.toString(),
-                                        onValueChange = {
-                                            val newPrice = it.toDoubleOrNull() ?: 0.0
-                                            viewModel.updateProductField(price = newPrice)
+                                        value = priceText,
+                                        onValueChange = { input ->
+                                            // Si el campo está vacío o solo contiene un punto decimal, establecemos un valor válido
+                                            val validatedValue = when {
+                                                input.isEmpty() -> {
+                                                    isPriceFieldTouched = true
+                                                    "0" // Evitamos enviar cadenas vacías
+                                                }
+                                                input == "." -> {
+                                                    isPriceFieldTouched = true
+                                                    "0."
+                                                }
+                                                else -> {
+                                                    isPriceFieldTouched = true
+                                                    // Filtramos caracteres no numéricos excepto el punto decimal
+                                                    val filtered = input.filter { char -> char.isDigit() || char == '.' }
+                                                    if (filtered.count { char -> char == '.' } > 1) {
+                                                        val firstDecimalIndex = filtered.indexOf('.')
+                                                        filtered.substring(0, firstDecimalIndex + 1) + filtered.substring(firstDecimalIndex + 1).replace(".", "")
+                                                    } else {
+                                                        filtered
+                                                    }
+                                                }
+                                            }
+
+                                            priceText = validatedValue
+
+                                            // Solo actualizamos el modelo cuando el valor es válido
+                                            validatedValue.toDoubleOrNull()?.let { doubleValue ->
+                                                viewModel.updateProductField(price = doubleValue)
+                                            }
                                         },
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .onFocusChanged { focused ->
+                                                if (focused.isFocused && !isPriceFieldTouched && priceText == "0.0") {
+                                                    priceText = ""
+                                                    isPriceFieldTouched = true
+                                                }
+                                            },
                                         singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                         colors = TextFieldDefaults.outlinedTextFieldColors(
                                             focusedBorderColor = MaterialTheme.colors.primary,
                                             unfocusedBorderColor = MaterialTheme.colors.onSurface.copy(alpha = 0.2f)
@@ -184,13 +220,38 @@ fun ProductFormScreen(
                                         color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
                                     )
 
+                                    var inventoryText by remember { mutableStateOf(currentProduct.inventory.toString()) }
+                                    var isInventoryFieldTouched by remember { mutableStateOf(false) }
+
                                     OutlinedTextField(
-                                        value = currentProduct.inventory.toString(),
-                                        onValueChange = {
-                                            val newInventory = it.toIntOrNull() ?: 0
-                                            viewModel.updateProductField(inventory = newInventory)
+                                        value = inventoryText,
+                                        onValueChange = { input ->
+                                            val validatedValue = when {
+                                                input.isEmpty() -> {
+                                                    isInventoryFieldTouched = true
+                                                    "0"
+                                                }
+                                                else -> {
+                                                    isInventoryFieldTouched = true
+                                                    // Solo permitimos dígitos para el inventario
+                                                    input.filter { char -> char.isDigit() }
+                                                }
+                                            }
+
+                                            inventoryText = validatedValue
+
+                                            validatedValue.toIntOrNull()?.let { intValue ->
+                                                viewModel.updateProductField(inventory = intValue)
+                                            }
                                         },
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .onFocusChanged { focused ->
+                                                if (focused.isFocused && !isInventoryFieldTouched && inventoryText == "0") {
+                                                    inventoryText = ""
+                                                    isInventoryFieldTouched = true
+                                                }
+                                            },
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -287,13 +348,41 @@ fun ProductFormScreen(
                                         color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
                                     )
 
+                                    var discountText by remember { mutableStateOf(currentProduct.discountPercentage.toString()) }
+                                    var isDiscountFieldTouched by remember { mutableStateOf(false) }
+
                                     OutlinedTextField(
-                                        value = currentProduct.discountPercentage.toString(),
-                                        onValueChange = {
-                                            val newDiscount = it.toIntOrNull() ?: 0
-                                            viewModel.updateProductField(discountPercentage = newDiscount)
+                                        value = discountText,
+                                        onValueChange = { input ->
+                                            val validatedValue = when {
+                                                input.isEmpty() -> {
+                                                    isDiscountFieldTouched = true
+                                                    "0"
+                                                }
+                                                else -> {
+                                                    isDiscountFieldTouched = true
+                                                    // Solo permitimos dígitos y limitamos el valor a 100
+                                                    val filtered = input.filter { char -> char.isDigit() }
+                                                    filtered.toIntOrNull()?.let { num ->
+                                                        if (num > 100) "100" else filtered
+                                                    } ?: filtered
+                                                }
+                                            }
+
+                                            discountText = validatedValue
+
+                                            validatedValue.toIntOrNull()?.let { intValue ->
+                                                viewModel.updateProductField(discountPercentage = intValue)
+                                            }
                                         },
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .onFocusChanged { focused ->
+                                                if (focused.isFocused && !isDiscountFieldTouched && discountText == "0") {
+                                                    discountText = ""
+                                                    isDiscountFieldTouched = true
+                                                }
+                                            },
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         colors = TextFieldDefaults.outlinedTextFieldColors(

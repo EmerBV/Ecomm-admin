@@ -269,17 +269,13 @@ class ProductRepositoryImpl(
     override suspend fun addProduct(product: ProductDto): Flow<ApiResult<ProductDto>> = flow {
         emit(ApiResult.Loading)
         try {
-            // Convertir ProductDto a formato de solicitud esperado por la API
-            val requestBody = mapOf(
-                "name" to product.name,
-                "brand" to product.brand,
-                "price" to product.price,
-                "inventory" to product.inventory,
-                "description" to product.description,
-                "category" to mapOf("id" to product.category.id, "name" to product.category.name),
-                "discountPercentage" to product.discountPercentage,
-                "status" to product.status,
-                "preOrder" to product.preOrder
+            val productToSend = product.copy(
+                id = 0L,
+                variants = emptyList(),
+                images = emptyList(),
+                salesCount = 0,
+                wishCount = 0,
+                createdAt = null
             )
 
             val response = httpClient.post("$baseUrl/products/add") {
@@ -288,7 +284,7 @@ class ProductRepositoryImpl(
                     contentType(ContentType.Application.Json)
                     accept(ContentType.Application.Json)
                 }
-                setBody(requestBody)
+                setBody(productToSend)
             }
 
             if (response.status.isSuccess()) {
