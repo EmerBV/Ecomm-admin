@@ -57,6 +57,8 @@ kotlin {
             // Lifecycle
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
+
+            implementation("ch.qos.logback:logback-classic:1.4.11")
         }
 
         commonTest.dependencies {

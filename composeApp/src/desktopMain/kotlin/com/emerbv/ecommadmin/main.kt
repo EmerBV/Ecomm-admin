@@ -4,6 +4,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowSize
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.emerbv.ecommadmin.core.datastore.CredentialsDataStore
@@ -24,7 +26,6 @@ import com.emerbv.ecommadmin.features.dashboard.presentation.DashboardScreen
 import com.emerbv.ecommadmin.features.products.di.productModule
 import com.emerbv.ecommadmin.features.products.presentation.ProductDetailScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductFormScreen
-import com.emerbv.ecommadmin.features.products.presentation.ProductEditScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductListViewModel
 import com.emerbv.ecommadmin.features.products.presentation.ProductEditViewModel
@@ -36,7 +37,7 @@ import java.util.prefs.Preferences
 
 fun main() = application {
     val state = rememberWindowState(
-        width = 1200.dp,
+        width = 1400.dp,
         height = 900.dp
     )
 
