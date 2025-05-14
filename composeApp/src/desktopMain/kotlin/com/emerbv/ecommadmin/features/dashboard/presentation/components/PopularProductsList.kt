@@ -15,26 +15,35 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PopularProductsList() {
+fun PopularProductsList(products: List<ProductPopularUi>) {
     Card(elevation = 4.dp) {
         Column(Modifier.padding(20.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Popular Products", style = MaterialTheme.typography.subtitle1.copy(fontWeight = FontWeight.Bold))
-                TextButton(onClick = { /* TODO: Navegar a lista completa */ }) {
+                TextButton(onClick = { /* TODO: Navigate to full list */ }) {
                     Text("View all")
                 }
             }
             Spacer(Modifier.height(8.dp))
-            val products = listOf(
-                ProductPopularUi("One Piece Fantasy Studio Yamato Resin Statue", "Fantasy Studio", "$345.00", 55),
-                ProductPopularUi("Monkey D. Luffy - Gear 5", "Bandai Spirits", "$39.99", 35),
-                ProductPopularUi("One Piece Lx Studio Marshall D. Teach Resin Statue", "Lx Studio", "$399.00", 33),
-                ProductPopularUi("Naruto Miss Studio Minato Resin Statue", "Miss Studio", "$100.00", 10),
-                ProductPopularUi("Dragon Ball Infinite Studio Majin Vegeta Resin Statue", "Infinite Studio", "$225.00", 7)
-            )
-            products.forEach {
-                PopularProductItem(it)
-                Spacer(Modifier.height(8.dp))
+
+            if (products.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No popular products found",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            } else {
+                products.forEach {
+                    PopularProductItem(it)
+                    Spacer(Modifier.height(8.dp))
+                }
             }
         }
     }

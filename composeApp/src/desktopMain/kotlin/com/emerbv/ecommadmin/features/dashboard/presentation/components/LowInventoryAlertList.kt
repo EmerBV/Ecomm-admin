@@ -11,26 +11,35 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun LowInventoryAlertList() {
+fun LowInventoryAlertList(alerts: List<LowInventoryUi>) {
     Card(elevation = 4.dp) {
         Column(Modifier.padding(20.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Low Inventory Alert", style = MaterialTheme.typography.subtitle1.copy(fontWeight = FontWeight.Bold))
-                TextButton(onClick = { /* TODO: Navegar a lista completa */ }) {
+                TextButton(onClick = { /* TODO: Navigate to full list */ }) {
                     Text("View all")
                 }
             }
             Spacer(Modifier.height(8.dp))
-            val alerts = listOf(
-                LowInventoryUi("Spirited Away Bard Studio x UP Studio Gallery Resin Statue", "Bard Studio x UP Studio", 3),
-                LowInventoryUi("Chainsaw Man Modomodo Studio Makima Resin Statue", "Modomodo Studio", 3),
-                LowInventoryUi("Naruto Xiu Studio Minato Namikaze Resin Statue", "Xiu Studio", 5),
-                LowInventoryUi("Bleach HZ Studio Ichigo Kurosaki Hollow Resin Statue", "HZ Studio", 3),
-                LowInventoryUi("Demon Slayer KNY Studio Nezuko Kamado Resin Statue", "KNY Studio", 3)
-            )
-            alerts.forEach {
-                LowInventoryAlertItem(it)
-                Spacer(Modifier.height(8.dp))
+
+            if (alerts.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No low inventory alerts",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            } else {
+                alerts.forEach {
+                    LowInventoryAlertItem(it)
+                    Spacer(Modifier.height(8.dp))
+                }
             }
         }
     }

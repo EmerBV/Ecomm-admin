@@ -28,6 +28,7 @@ fun ProductFormScreen(
 ) {
     val categoryState by viewModel.categoryState.collectAsState()
     val productState by viewModel.productState.collectAsState()
+    val snackbarHostState = viewModel.snackbarHostState
 
     // Inicializar el ViewModel para crear un nuevo producto
     LaunchedEffect(initialProduct) {
@@ -65,8 +66,16 @@ fun ProductFormScreen(
                     backgroundColor = MaterialTheme.colors.background,
                     elevation = 0.dp
                 )
-            }
+            },
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
         ) { paddingValues ->
+            // Show loading indicator
+            if (productState.isLoading || (currentProduct == null && categoryState.isLoading)) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             if (currentProduct == null) {
                 // Mostrar carga inicial
                 Box(

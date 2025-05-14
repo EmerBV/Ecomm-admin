@@ -88,8 +88,6 @@ class ProductVariantsViewModel(
                                 errorMessage = null
                             )
                         }
-
-                        println("Producto actualizado: ${updatedProduct.name} con ${updatedVariants.size} variantes")
                     }
                     is ApiResult.Error -> {
                         _uiState.update {
@@ -237,7 +235,6 @@ class ProductVariantsViewModel(
 
                         // Recarga los datos completos del producto después para sincronizar todo
                         refreshProductData(productId)
-                        ensureCorrectInventoryAndStatus()
                     }
                     is ApiResult.Error -> {
                         _uiState.update {

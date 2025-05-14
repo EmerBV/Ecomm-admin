@@ -20,7 +20,9 @@ import com.emerbv.ecommadmin.features.categories.presentation.CategoryEditScreen
 import com.emerbv.ecommadmin.features.categories.presentation.CategoryFormViewModel
 import com.emerbv.ecommadmin.features.categories.presentation.CategoryListScreen
 import com.emerbv.ecommadmin.features.categories.presentation.CategoryListViewModel
+import com.emerbv.ecommadmin.features.dashboard.di.dashboardModule
 import com.emerbv.ecommadmin.features.dashboard.presentation.DashboardScreen
+import com.emerbv.ecommadmin.features.dashboard.presentation.DashboardViewModel
 import com.emerbv.ecommadmin.features.products.di.productModule
 import com.emerbv.ecommadmin.features.products.presentation.ProductDetailScreen
 import com.emerbv.ecommadmin.features.products.presentation.ProductFormScreen
@@ -54,7 +56,7 @@ fun main() = application {
 
     // Inicializar Koin con todos los módulos
     startKoin {
-        modules(appModule, platformModule, productModule, categoryModule)
+        modules(appModule, platformModule, productModule, categoryModule, dashboardModule)
     }
 
     // Obtener ViewModels
@@ -118,7 +120,8 @@ fun main() = application {
                 DashboardScreen(
                     userData = currentScreen.userData,
                     navigationState = navigationState,
-                    tokenManager = tokenManagerInstance
+                    tokenManager = tokenManagerInstance,
+                    viewModel = get<DashboardViewModel>(DashboardViewModel::class.java)
                 )
             }
             is Screen.ProductList -> {

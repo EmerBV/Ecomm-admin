@@ -29,6 +29,12 @@ fun ProductListScreen(
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Always refresh data when screen appears
+    LaunchedEffect(Unit) {
+        viewModel.loadAllProducts()
+    }
 
     var showSortMenu by remember { mutableStateOf(false) }
     var showCategoryMenu by remember { mutableStateOf(false) }
@@ -52,14 +58,22 @@ fun ProductListScreen(
                     selectedCategory = uiState.selectedCategory,
                     onBackClick = onBackClick
                 )
-            }
+            },
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
         ) { paddingValues ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Header similar a la imagen
+                // Show main loading indicator
+                if (uiState.isLoading) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Header
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -77,7 +91,7 @@ fun ProductListScreen(
                     )
                 }
 
-                // Botón Add Product en la parte superior derecha
+                // Add Product button
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -98,7 +112,7 @@ fun ProductListScreen(
                     }
                 }
 
-                // Encabezado de la tabla
+                // Table header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -152,95 +166,94 @@ fun ProductListScreen(
                     )
                 }
 
-                if (uiState.isLoading && uiState.products.isEmpty()) {
-                    // Mostrar carga inicial
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else if (uiState.errorMessage != null && uiState.products.isEmpty()) {
-                    // Mostrar error
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = "Error",
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colors.error
-                            )
-                            Text(
-                                text = uiState.errorMessage ?: "Unknown error",
-                                style = MaterialTheme.typography.body1,
-                                color = MaterialTheme.colors.error,
-                                textAlign = TextAlign.Center
-                            )
-                            Button(
-                                onClick = { viewModel.refreshData() },
-                                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = "Retry",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Retry")
-                            }
-                        }
-                    }
-                } else {
-                    // Lista de productos
-                    if (uiState.filteredProducts.isEmpty()) {
+                // Display content based on state
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (uiState.isLoading && uiState.products.isEmpty()) {
+                        // Initial loading
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "No products found",
-                                style = MaterialTheme.typography.body1,
-                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
-                            )
+                            CircularProgressIndicator()
+                        }
+                    } else if (uiState.errorMessage != null && uiState.products.isEmpty()) {
+                        // Error state
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Error,
+                                    contentDescription = "Error",
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colors.error
+                                )
+                                Text(
+                                    text = uiState.errorMessage ?: "Unknown error",
+                                    style = MaterialTheme.typography.body1,
+                                    color = MaterialTheme.colors.error,
+                                    textAlign = TextAlign.Center
+                                )
+                                Button(
+                                    onClick = { viewModel.refreshData() },
+                                    colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "Retry",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Retry")
+                                }
+                            }
                         }
                     } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(
-                                items = uiState.filteredProducts,
-                                key = { it.id }
-                            ) { product ->
-                                ProductRow(
-                                    product = product,
-                                    onProductSelected = onProductSelected
+                        // List of products or empty state
+                        if (uiState.filteredProducts.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No products found",
+                                    style = MaterialTheme.typography.body1,
+                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
                                 )
-                                Divider()
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(
+                                    items = uiState.filteredProducts,
+                                    key = { it.id }
+                                ) { product ->
+                                    ProductRow(
+                                        product = product,
+                                        onProductSelected = onProductSelected
+                                    )
+                                    Divider()
+                                }
                             }
                         }
                     }
-                }
 
-                // Mostrar indicador de carga para actualizaciones
-                AnimatedVisibility(
-                    visible = uiState.isLoading && uiState.products.isNotEmpty(),
-                    enter = fadeIn(),
-                    exit = fadeOut(),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    if (uiState.isLoading && uiState.products.isNotEmpty()) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                        )
+                    }
                 }
             }
 
-            // Menús desplegables (igual que en el código original)
+            // Menus (sort and category filters)
             DropdownMenu(
                 expanded = showSortMenu,
                 onDismissRequest = { showSortMenu = false },

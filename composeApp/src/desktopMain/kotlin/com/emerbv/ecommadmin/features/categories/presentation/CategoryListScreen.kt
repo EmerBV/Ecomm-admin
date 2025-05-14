@@ -32,43 +32,47 @@ fun CategoryListScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf<CategoryDto?>(null) }
 
-    // Cargar categorías al entrar a la pantalla
+    // Snackbar host state for showing success/error messages
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Show success message when available
+    LaunchedEffect(uiState.successMessage) {
+        if (uiState.successMessage.isNotEmpty()) {
+            snackbarHostState.showSnackbar(uiState.successMessage)
+            viewModel.clearMessages()
+        }
+    }
+
+    // Load categories when screen appears
     LaunchedEffect(Unit) {
         viewModel.loadCategories()
     }
 
-    // Debug - Mostrar información sobre el estado
-    LaunchedEffect(uiState) {
-        println("UI State actualizado: ${uiState.categories.size} categorías, isLoading=${uiState.isLoading}, error=${uiState.errorMessage}")
-    }
-
     EcommAdminTheme {
-        // Eliminada la Row que contenía el sidebar, ahora usamos solo la columna de contenido
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            // Top Bar
-            TopAppBar(
-                title = { Text("Dashboard") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Dashboard") },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    backgroundColor = MaterialTheme.colors.background,
+                    elevation = 0.dp,
+                    actions = {
+                        IconButton(onClick = { viewModel.loadCategories() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        }
                     }
-                },
-                backgroundColor = MaterialTheme.colors.background,
-                elevation = 0.dp,
-                actions = {
-                    IconButton(onClick = { viewModel.loadCategories() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                    }
-                }
-            )
-
-            // Main content
+                )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { paddingValues ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(paddingValues)
                     .padding(16.dp)
             ) {
                 Column(
@@ -109,7 +113,14 @@ fun CategoryListScreen(
                         }
                     }
 
-                    // Table header
+                    // Show loading indicator
+                    if (uiState.isLoading) {
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    // Table header and content
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = 2.dp
@@ -152,7 +163,7 @@ fun CategoryListScreen(
 
                             Divider()
 
-                            // Content area
+                            // Content area with appropriate state handling
                             if (uiState.isLoading && uiState.categories.isEmpty()) {
                                 Box(
                                     modifier = Modifier
@@ -207,59 +218,62 @@ fun CategoryListScreen(
                                     )
                                 }
                             } else {
-                                // Category list - Altura fija para evitar problemas de renderizado
-                                Box(
+                                // Improve LazyColumn implementation with fixed height
+                                LazyColumn(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .heightIn(min = 200.dp)
+                                        .heightIn(min = 200.dp, max = 500.dp)
                                 ) {
-                                    LazyColumn {
-                                        items(uiState.categories) { category ->
-                                            CategoryRow(
-                                                category = category,
-                                                onEditClick = {
-                                                    navigationState.navigateTo(
-                                                        Screen.CategoryEdit(userData, category)
-                                                    )
-                                                },
-                                                onDeleteClick = {
-                                                    showDeleteDialog = category
-                                                }
-                                            )
-                                            Divider()
-                                        }
+                                    items(
+                                        items = uiState.categories,
+                                        key = { it.id }
+                                    ) { category ->
+                                        CategoryRow(
+                                            category = category,
+                                            onEditClick = {
+                                                navigationState.navigateTo(
+                                                    Screen.CategoryEdit(userData, category)
+                                                )
+                                            },
+                                            onDeleteClick = {
+                                                showDeleteDialog = category
+                                            }
+                                        )
+                                        Divider()
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-        }
 
-        // Delete confirmation dialog
-        if (showDeleteDialog != null) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = null },
-                title = { Text("Delete Category") },
-                text = { Text("Are you sure you want to delete the category '${showDeleteDialog?.name}'? This action cannot be undone.") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showDeleteDialog?.id?.let { viewModel.deleteCategory(it) }
-                            showDeleteDialog = null
+                // Delete confirmation dialog
+                if (showDeleteDialog != null) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteDialog = null },
+                        title = { Text("Delete Category") },
+                        text = { Text("Are you sure you want to delete the category '${showDeleteDialog?.name}'? This action cannot be undone.") },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showDeleteDialog?.id?.let {
+                                        viewModel.deleteCategory(it)
+                                    }
+                                    showDeleteDialog = null
+                                },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
+                            ) {
+                                Text("Delete")
+                            }
                         },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
-                    ) {
-                        Text("Delete")
-                    }
-                },
-                dismissButton = {
-                    OutlinedButton(onClick = { showDeleteDialog = null }) {
-                        Text("Cancel")
-                    }
+                        dismissButton = {
+                            OutlinedButton(onClick = { showDeleteDialog = null }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
                 }
-            )
+            }
         }
     }
 }

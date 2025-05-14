@@ -12,28 +12,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun InventoryStatusRow() {
+fun InventoryStatusRow(
+    inStockCount: Int,
+    outOfStockCount: Int,
+    preOrderCount: Int
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         InventoryStatusCard(
             title = "In Stock",
-            value = "25",
+            value = inStockCount.toString(),
             subtitle = "products available",
             color = Color(0xFFD1FAE5),
             modifier = Modifier.weight(1f)
         )
         InventoryStatusCard(
             title = "Out of Stock",
-            value = "2",
+            value = outOfStockCount.toString(),
             subtitle = "products unavailable",
             color = Color(0xFFFEE2E2),
             modifier = Modifier.weight(1f)
         )
         InventoryStatusCard(
             title = "Pre-Order",
-            value = "2",
+            value = preOrderCount.toString(),
             subtitle = "products on pre-order",
             color = Color(0xFFEDE9FE),
             modifier = Modifier.weight(1f)

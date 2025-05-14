@@ -1,5 +1,7 @@
 package com.emerbv.ecommadmin.features.products.presentation
 
+import androidx.compose.material.SnackbarDuration
+import androidx.compose.material.SnackbarHostState
 import com.emerbv.ecommadmin.core.network.ApiResult
 import com.emerbv.ecommadmin.features.categories.data.model.CategoryDto
 import com.emerbv.ecommadmin.features.categories.domain.GetAllCategoriesUseCase
@@ -51,6 +53,8 @@ class ProductFormViewModel(
     private val _productState = MutableStateFlow(ProductFormState())
     val productState: StateFlow<ProductFormState> = _productState.asStateFlow()
 
+    val snackbarHostState = SnackbarHostState()
+
     /**
      * Inicializa el formulario para editar un producto existente
      */
@@ -84,49 +88,45 @@ class ProductFormViewModel(
 
     fun loadCategories() {
         scope.launch {
-            try {
-                _categoryState.update { it.copy(isLoading = true, errorMessage = null) }
+            _categoryState.update { it.copy(isLoading = true, errorMessage = null) }
 
-                // Realizamos la llamada al API a través del caso de uso
-                getAllCategoriesUseCase().collect { result ->
-                    when (result) {
-                        is ApiResult.Loading -> {
-                            _categoryState.update { it.copy(isLoading = true) }
+            getAllCategoriesUseCase().collect { result ->
+                when (result) {
+                    is ApiResult.Loading -> {
+                        _categoryState.update { it.copy(isLoading = true) }
+                    }
+
+                    is ApiResult.Success -> {
+                        val categories = result.data
+
+                        _categoryState.update {
+                            it.copy(
+                                categories = categories,
+                                isLoading = false,
+                                errorMessage = null
+                            )
                         }
 
-                        is ApiResult.Success -> {
-                            val categories = result.data
-
-                            _categoryState.update {
-                                it.copy(
-                                    categories = categories,
-                                    isLoading = false,
-                                    errorMessage = null
-                                )
-                            }
-
-                            // Si estamos creando un nuevo producto y hay categorías, seleccionar la primera por defecto
-                            if (_productState.value.isNew && _productState.value.product == null && categories.isNotEmpty()) {
-                                createEmptyProduct(categories.first())
-                            }
-                        }
-
-                        is ApiResult.Error -> {
-                            _categoryState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    errorMessage = result.message
-                                )
-                            }
+                        // Si estamos creando un nuevo producto y hay categorías, seleccionar la primera por defecto
+                        if (_productState.value.isNew && _productState.value.product == null && categories.isNotEmpty()) {
+                            createEmptyProduct(categories.first())
                         }
                     }
-                }
-            } catch (e: Exception) {
-                _categoryState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = "Error cargando categorías: ${e.message}"
-                    )
+
+                    is ApiResult.Error -> {
+                        _categoryState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = result.message
+                            )
+                        }
+
+                        // Show error in snackbar
+                        snackbarHostState.showSnackbar(
+                            message = "Error loading categories: ${result.message}",
+                            duration = SnackbarDuration.Long
+                        )
+                    }
                 }
             }
         }
@@ -209,14 +209,12 @@ class ProductFormViewModel(
     fun saveProduct() {
         val productToSave = _productState.value.product ?: return
 
-        // Asegurarse de que el estado es correcto basado en el inventario total
+        // Ensure correct status based on inventory
         val finalProduct = if (productToSave.variants?.isNotEmpty() == true) {
-            // Si tiene variantes, calcular el inventario total de las variantes
             val totalInventory = productToSave.variants.sumOf { it.inventory }
             val correctStatus = if (totalInventory <= 0) "OUT_OF_STOCK" else "IN_STOCK"
             productToSave.copy(status = correctStatus)
         } else {
-            // Si no tiene variantes, usar el inventario del producto
             val correctStatus = if (productToSave.inventory <= 0) "OUT_OF_STOCK" else "IN_STOCK"
             productToSave.copy(status = correctStatus)
         }
@@ -248,6 +246,12 @@ class ProductFormViewModel(
                                     errorMessage = null
                                 )
                             }
+
+                            // Show success message
+                            snackbarHostState.showSnackbar(
+                                message = if (isNew) "Product created successfully!" else "Product updated successfully!",
+                                duration = SnackbarDuration.Short
+                            )
                         }
                         is ApiResult.Error -> {
                             _productState.update {
@@ -257,6 +261,12 @@ class ProductFormViewModel(
                                     errorMessage = apiResult.message
                                 )
                             }
+
+                            // Show error in snackbar
+                            snackbarHostState.showSnackbar(
+                                message = "Error: ${apiResult.message}",
+                                duration = SnackbarDuration.Long
+                            )
                         }
                     }
                 }
@@ -268,6 +278,12 @@ class ProductFormViewModel(
                         errorMessage = "Error inesperado: ${e.message}"
                     )
                 }
+
+                // Show error in snackbar
+                snackbarHostState.showSnackbar(
+                    message = "Unexpected error: ${e.message}",
+                    duration = SnackbarDuration.Long
+                )
             }
         }
     }

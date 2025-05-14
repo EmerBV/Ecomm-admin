@@ -27,6 +27,8 @@ class ProductListViewModel(
 
     fun loadAllProducts() {
         scope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
             getAllProductsUseCase().collect { result ->
                 when (result) {
                     is ApiResult.Loading -> {

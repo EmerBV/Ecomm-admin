@@ -20,16 +20,21 @@ import com.emerbv.ecommadmin.features.dashboard.presentation.components.KpiCards
 import com.emerbv.ecommadmin.features.dashboard.presentation.components.PopularProductsList
 import com.emerbv.ecommadmin.features.dashboard.presentation.components.LowInventoryAlertList
 import com.emerbv.ecommadmin.features.dashboard.presentation.components.InventoryStatusRow
+import com.emerbv.ecommadmin.features.dashboard.presentation.components.KpiCard
+import org.koin.java.KoinJavaComponent.get
 
 @Composable
 fun DashboardScreen(
     userData: JwtResponse,
     navigationState: NavigationState,
-    tokenManager: TokenManager
+    tokenManager: TokenManager,
+    viewModel: DashboardViewModel
 ) {
-    // Guardar datos de sesión
-    LaunchedEffect(userData) {
-        tokenManager.saveUserSession(userData)
+    val uiState by viewModel.uiState.collectAsState()
+
+    // Refresh data when screen is shown
+    LaunchedEffect(Unit) {
+        viewModel.loadDashboardData()
     }
 
     EcommAdminTheme {
@@ -72,14 +77,75 @@ fun DashboardScreen(
                     }
                 }
 
+                // Loading indicator
+                if (uiState.isLoading) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Error message if any
+                if (uiState.errorMessage != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        backgroundColor = MaterialTheme.colors.error.copy(alpha = 0.1f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = "Error",
+                                tint = MaterialTheme.colors.error
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = uiState.errorMessage ?: "",
+                                color = MaterialTheme.colors.error
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
                 Spacer(Modifier.height(24.dp))
 
                 // KPIs
-                KpiCardsRow()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    KpiCard(
+                        title = "Total Products",
+                        value = uiState.totalProducts.toString(),
+                        icon = Icons.Default.Inventory,
+                        modifier = Modifier.weight(1f)
+                    )
+                    KpiCard(
+                        title = "Total Categories",
+                        value = uiState.totalCategories.toString(),
+                        icon = Icons.Default.Category,
+                        modifier = Modifier.weight(1f)
+                    )
+                    KpiCard(
+                        title = "Total Inventory",
+                        value = "${uiState.totalInventory} units",
+                        icon = Icons.Default.ViewList,
+                        modifier = Modifier.weight(1f)
+                    )
+                    KpiCard(
+                        title = "Pre-Orders",
+                        value = uiState.preOrderCount.toString(),
+                        icon = Icons.Default.ShoppingCart,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
                 Spacer(Modifier.height(24.dp))
 
-                // Accesos directos a las principales secciones
+                // Quick Access
                 Text(
                     text = "Quick Access",
                     style = MaterialTheme.typography.h6
@@ -87,7 +153,7 @@ fun DashboardScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Accesos rápidos en forma de tarjetas
+                // Quick access cards
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -125,20 +191,26 @@ fun DashboardScreen(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Listas principales
+                // Main content lists
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Column(Modifier.weight(1f)) {
-                        PopularProductsList()
+                        // Use real data for popular products
+                        PopularProductsList(products = uiState.popularProducts)
                     }
                     Column(Modifier.weight(1f)) {
-                        LowInventoryAlertList()
+                        // Use real data for low inventory alerts
+                        LowInventoryAlertList(alerts = uiState.lowInventoryAlerts)
                     }
                 }
 
                 Spacer(Modifier.height(24.dp))
 
-                // Estado de inventario
-                InventoryStatusRow()
+                // Inventory status with real data
+                InventoryStatusRow(
+                    inStockCount = uiState.inStockCount,
+                    outOfStockCount = uiState.outOfStockCount,
+                    preOrderCount = uiState.preOrderCount
+                )
             }
         }
     }
