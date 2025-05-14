@@ -6,6 +6,7 @@ import com.emerbv.ecommadmin.features.products.data.model.VariantDto
 import com.emerbv.ecommadmin.features.products.domain.AddProductVariantUseCase
 import com.emerbv.ecommadmin.features.products.domain.DeleteProductVariantUseCase
 import com.emerbv.ecommadmin.features.products.domain.GetProductByIdUseCase
+import com.emerbv.ecommadmin.features.products.domain.UpdateProductUseCase
 import com.emerbv.ecommadmin.features.products.domain.UpdateProductVariantUseCase
 import com.emerbv.ecommadmin.features.products.presentation.components.VariantFormState
 import kotlinx.coroutines.CoroutineScope
@@ -36,6 +37,7 @@ data class ProductVariantsUiState(
 class ProductVariantsViewModel(
     private val getProductByIdUseCase: GetProductByIdUseCase,
     private val addProductVariantUseCase: AddProductVariantUseCase,
+    private val updateProductUseCase: UpdateProductUseCase,
     private val updateProductVariantUseCase: UpdateProductVariantUseCase,
     private val deleteProductVariantUseCase: DeleteProductVariantUseCase,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
@@ -235,6 +237,7 @@ class ProductVariantsViewModel(
 
                         // Recarga los datos completos del producto después para sincronizar todo
                         refreshProductData(productId)
+                        ensureCorrectInventoryAndStatus()
                     }
                     is ApiResult.Error -> {
                         _uiState.update {
@@ -246,6 +249,43 @@ class ProductVariantsViewModel(
                     }
                     is ApiResult.Loading -> {
                         _uiState.update { it.copy(isLoading = true) }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun ensureCorrectInventoryAndStatus() {
+        val currentProduct = _uiState.value.product ?: return
+        val variants = _uiState.value.variants
+
+        // Si no hay variantes, el inventario debe ser 0 y el estado OUT_OF_STOCK
+        if (variants.isEmpty() && (currentProduct.inventory > 0 || currentProduct.status != "OUT_OF_STOCK")) {
+            val updatedProduct = currentProduct.copy(
+                inventory = 0,
+                status = "OUT_OF_STOCK"
+            )
+
+            // Actualizar el producto en el backend
+            scope.launch {
+                updateProductUseCase(updatedProduct).collect { result ->
+                    when (result) {
+                        is ApiResult.Success -> {
+                            _uiState.update { state ->
+                                state.copy(
+                                    product = result.data,
+                                    successMessage = "Product inventory updated"
+                                )
+                            }
+                        }
+                        is ApiResult.Error -> {
+                            _uiState.update { state ->
+                                state.copy(
+                                    errorMessage = "Failed to update product inventory: ${result.message}"
+                                )
+                            }
+                        }
+                        else -> {}
                     }
                 }
             }
