@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Tiempo de sesión por defecto: 30 minutos
  */
-private val DEFAULT_SESSION_TIMEOUT = TimeUnit.MINUTES.toMillis(30)
+private val DEFAULT_SESSION_TIMEOUT = TimeUnit.MINUTES.toMillis(1)
 
 /**
  * Intervalo de verificación de timeout: 1 minuto
