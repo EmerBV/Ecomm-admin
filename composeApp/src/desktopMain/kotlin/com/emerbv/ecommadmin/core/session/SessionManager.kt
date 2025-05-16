@@ -35,8 +35,24 @@ class SessionManager(
      * Ejecuta el cierre de sesión completo: limpia el token y redirige al login
      */
     fun logout() {
+        println("Logout iniciado. Estado previo: ${tokenManager.isLoggedIn()}")
+
+        // Limpiar token
         tokenManager.clearSession()
+
+        // Verificar que realmente se limpió
+        if (tokenManager.isLoggedIn()) {
+            println("ERROR: El token no se eliminó correctamente")
+            // Intento más agresivo si el primer intento falló
+            tokenManager.clearSession()
+        }
+
+        println("Estado post-limpieza: ${tokenManager.isLoggedIn()}")
+
+        // Navegar explícitamente a la pantalla de login
         navigationState.navigateTo(Screen.Login)
+
+        println("Navegación a login completada")
     }
 
     /**

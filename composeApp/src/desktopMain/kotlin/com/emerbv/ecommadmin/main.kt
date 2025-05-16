@@ -37,6 +37,7 @@ import com.russhwolf.settings.PreferencesSettings
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.get
+import java.util.concurrent.TimeUnit
 import java.util.prefs.Preferences
 
 fun main() = application {
@@ -103,6 +104,28 @@ fun main() = application {
         resizable = false,
         state = state
     ) {
+        // Verificar consistencia de sesión al iniciar
+        val token = tokenManager.getToken()
+        val userId = tokenManager.getUserId()
+
+        println("Estado de sesión al iniciar:")
+        println("- Token: ${token?.take(10) ?: "null"}")
+        println("- User ID: $userId")
+
+        // Verificar timeout al inicio de manera explícita
+        if (token != null && userId != null) {
+            if (tokenManager.hasSessionTimedOut(TimeUnit.MINUTES.toMillis(30))) {
+                println("Sesión caducada por inactividad al iniciar")
+                tokenManager.clearSession()
+                // Forzar estado a Login explícitamente
+                navigationState.currentScreen.value = Screen.Login
+            } else {
+                println("Sesión activa válida")
+                // Actualizar actividad
+                tokenManager.updateLastActivityTimestamp()
+            }
+        }
+
         val currentScreen = navigationState.currentScreen.value
 
         SessionManagerProvider(

@@ -35,15 +35,28 @@ fun SessionScreen(
     val sessionManager = LocalSessionManager.current
         ?: throw IllegalStateException("SessionManager no encontrado. Asegúrate de usar SessionManagerProvider en tu jerarquía de composición.")
 
+    println("SessionScreen iniciada. Tiempo de inactividad configurado: ${timeoutMillis/1000} segundos")
+
+    // Actualizar actividad al cargar la pantalla
+    LaunchedEffect(Unit) {
+        println("Actualizando marca de tiempo inicial")
+        sessionManager.updateActivity()
+    }
+
     // Efecto para verificar periódicamente si la sesión ha expirado
     LaunchedEffect(Unit) {
         while (isActive) {
-            delay(DEFAULT_CHECK_INTERVAL)
+            //delay(DEFAULT_CHECK_INTERVAL)
 
-            if (sessionManager.isLoggedIn() &&
-                sessionManager.hasSessionTimedOut(timeoutMillis)) {
+            delay(10000) // Revisar cada 10 segundos para debugging (en producción usar DEFAULT_CHECK_INTERVAL)
 
-                println("Sesión expirada - sin actividad por $timeoutMillis ms")
+            val isLoggedIn = sessionManager.isLoggedIn()
+            val hasTimedOut = sessionManager.hasSessionTimedOut(timeoutMillis)
+
+            println("Verificación de timeout: isLoggedIn=$isLoggedIn, hasTimedOut=$hasTimedOut")
+
+            if (isLoggedIn && hasTimedOut) {
+                println("TIMEOUT DETECTADO: Cerrando sesión automáticamente")
                 sessionManager.logout()
                 break
             }

@@ -33,19 +33,29 @@ class TokenManager(private val settings: Settings) {
         settings.remove(KEY_TOKEN)
         settings.remove(KEY_USER_ID)
         settings.remove(KEY_LAST_ACTIVITY)
-        println("Session cleared completely")
+
+        // Añadir verificación explícita
+        if (settings.hasKey(KEY_TOKEN) || settings.hasKey(KEY_USER_ID)) {
+            println("ERROR: No se pudieron eliminar las claves de sesión")
+            settings.clear()  // Esto limpia todas las preferencias (usa con cuidado)
+        } else {
+            println("Session cleared completely")
+        }
     }
 
     fun isLoggedIn(): Boolean = getToken() != null && getUserId() != null
 
     // Funciones para gestionar el timeout por inactividad
     fun updateLastActivityTimestamp() {
-        settings.putLong(KEY_LAST_ACTIVITY, System.currentTimeMillis())
-        //println("Last activity timestamp updated: ${System.currentTimeMillis()}")
+        val timestamp = System.currentTimeMillis()
+        settings.putLong(KEY_LAST_ACTIVITY, timestamp)
+        println("Última actividad actualizada: ${java.util.Date(timestamp)}")
     }
 
     fun getLastActivityTimestamp(): Long {
-        return settings.getLong(KEY_LAST_ACTIVITY, System.currentTimeMillis())
+        val timestamp = settings.getLong(KEY_LAST_ACTIVITY, System.currentTimeMillis())
+        println("Última actividad registrada: ${java.util.Date(timestamp)}")
+        return timestamp
     }
 
     fun hasSessionTimedOut(timeoutMillis: Long): Boolean {
@@ -54,9 +64,10 @@ class TokenManager(private val settings: Settings) {
         val lastActivity = getLastActivityTimestamp()
         val currentTime = System.currentTimeMillis()
         val timeSinceLastActivity = currentTime - lastActivity
+        val hasTimedOut = timeSinceLastActivity > timeoutMillis
 
         println("Time since last activity: ${timeSinceLastActivity / 1000} seconds")
-        return timeSinceLastActivity > timeoutMillis
+        return hasTimedOut
     }
 
     // Helper para depuración

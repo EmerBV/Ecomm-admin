@@ -20,9 +20,12 @@ fun Modifier.detectUserActivity(onActivityDetected: () -> Unit): Modifier = comp
                     PointerEventType.Move,
                     PointerEventType.Release,
                     PointerEventType.Enter -> {
+                        println("ACTIVIDAD DETECTADA: ${event.type}")
                         onActivityDetected()
                     }
-                    else -> { /* Ignorar otros eventos */ }
+                    else -> {
+                        println("Evento ignorado: ${event.type}")
+                    }
                 }
             }
         }
