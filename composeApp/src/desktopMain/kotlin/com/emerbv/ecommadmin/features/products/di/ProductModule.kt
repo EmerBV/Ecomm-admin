@@ -57,6 +57,7 @@ val productModule = module {
     factoryOf(::GetRecentProductsUseCase)
     factoryOf(::AddProductUseCase)
     factoryOf(::UpdateProductUseCase)
+    factoryOf(::DeleteProductUseCase)
 
     // Casos de uso para variantes
     factoryOf(::AddProductVariantUseCase)

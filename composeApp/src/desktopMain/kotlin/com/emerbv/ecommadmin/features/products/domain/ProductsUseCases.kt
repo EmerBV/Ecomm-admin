@@ -58,3 +58,9 @@ class UpdateProductUseCase(private val repository: ProductRepository) {
         return repository.updateProduct(product)
     }
 }
+
+class DeleteProductUseCase(private val repository: ProductRepository) {
+    suspend operator fun invoke(productId: Long): Flow<ApiResult<Boolean>> {
+        return repository.deleteProduct(productId)
+    }
+}

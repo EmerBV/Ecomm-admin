@@ -33,6 +33,7 @@ fun ProductListScreen(
     tokenManager: TokenManager
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Estado para menús y búsqueda
@@ -40,6 +41,17 @@ fun ProductListScreen(
     var showCategoryMenu by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchVisible by remember { mutableStateOf(false) }
+
+    // Estado para el diálogo de confirmación de eliminación
+    var showDeleteDialog by remember { mutableStateOf<ProductDto?>(null) }
+
+    // Mostrar mensaje de éxito
+    LaunchedEffect(successMessage) {
+        successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessages()
+        }
+    }
 
     // Cargar datos cuando aparece la pantalla
     LaunchedEffect(Unit) {
@@ -352,7 +364,7 @@ fun ProductListScreen(
                                                 navigationState.navigateTo(Screen.ProductEdit(userData, product))
                                             },
                                             onDeleteClick = {
-                                                // Implementar diálogo de confirmación y eliminación
+                                                showDeleteDialog = product
                                             }
                                         )
                                         Divider()
@@ -384,6 +396,33 @@ fun ProductListScreen(
                             showCategoryMenu = false
                         },
                         onDismiss = { showCategoryMenu = false }
+                    )
+                }
+
+                if (showDeleteDialog != null) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteDialog = null },
+                        title = { Text("Delete Product") },
+                        text = {
+                            Text("Are you sure you want to delete the product '${showDeleteDialog?.name}'? This action cannot be undone.")
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    val productToDelete = showDeleteDialog
+                                    showDeleteDialog = null
+                                    productToDelete?.id?.let { viewModel.deleteProduct(it) }
+                                },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
+                            ) {
+                                Text("Delete")
+                            }
+                        },
+                        dismissButton = {
+                            OutlinedButton(onClick = { showDeleteDialog = null }) {
+                                Text("Cancel")
+                            }
+                        }
                     )
                 }
             }

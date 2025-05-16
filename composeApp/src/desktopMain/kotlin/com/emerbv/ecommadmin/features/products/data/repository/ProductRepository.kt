@@ -15,6 +15,7 @@ interface ProductRepository {
     suspend fun getRecentProducts(): Flow<ApiResult<List<ProductDto>>>
     suspend fun addProduct(product: ProductDto): Flow<ApiResult<ProductDto>>
     suspend fun updateProduct(product: ProductDto): Flow<ApiResult<ProductDto>>
+    suspend fun deleteProduct(productId: Long): Flow<ApiResult<Boolean>>
 
     suspend fun addProductVariant(productId: Long, variant: VariantDto): Flow<ApiResult<VariantDto>>
     suspend fun updateProductVariant(productId: Long, variant: VariantDto): Flow<ApiResult<VariantDto>>

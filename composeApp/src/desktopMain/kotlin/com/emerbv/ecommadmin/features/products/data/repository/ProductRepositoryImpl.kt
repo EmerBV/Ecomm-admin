@@ -356,6 +356,48 @@ class ProductRepositoryImpl(
         }
     }
 
+    override suspend fun deleteProduct(productId: Long): Flow<ApiResult<Boolean>> = flow {
+        emit(ApiResult.Loading)
+        try {
+            val token = tokenProvider()
+            if (token.isNullOrBlank()) {
+                emit(ApiResult.Error("Authentication token not available. Please login again.", null))
+                return@flow
+            }
+
+            val response = httpClient.delete("$baseUrl/products/product/$productId/delete") {
+                headers {
+                    header("Authorization", "Bearer $token")
+                    accept(ContentType.Application.Json)
+                }
+            }
+
+            if (response.status.isSuccess()) {
+                emit(ApiResult.Success(true))
+            } else {
+                val errorText = response.bodyAsText()
+                when (response.status) {
+                    HttpStatusCode.Forbidden -> {
+                        emit(ApiResult.Error("You do not have permission to delete this product. Only admin users can delete products.", 403))
+                    }
+                    else -> {
+                        emit(ApiResult.Error("Server error: ${response.status} - $errorText", response.status.value))
+                    }
+                }
+            }
+        } catch (e: ClientRequestException) {
+            val errorMessage = when (e.response.status) {
+                HttpStatusCode.Unauthorized -> "Not authorized. Please login again with an admin account."
+                HttpStatusCode.Forbidden -> "You do not have permission to delete products. Admin privileges required."
+                HttpStatusCode.NotFound -> "Product not found"
+                else -> "Connection error: ${e.message}"
+            }
+            emit(ApiResult.Error(errorMessage, e.response.status.value))
+        } catch (e: Exception) {
+            emit(ApiResult.Error("Unexpected error: ${e.message}"))
+        }
+    }
+
     override suspend fun addProductVariant(productId: Long, variant: VariantDto): Flow<ApiResult<VariantDto>> = flow {
         emit(ApiResult.Loading)
         try {
