@@ -66,10 +66,7 @@ fun CategoryListScreen(
                 }
             },
             userName = "Admin", // Idealmente obtener del usuario actual
-            onLogout = {
-                tokenManager.clearSession()
-                navigationState.navigateTo(Screen.Login)
-            },
+            onLogout = { },
             title = "Categories",
             topBarActions = {
                 IconButton(onClick = { viewModel.loadCategories() }) {

@@ -141,6 +141,7 @@ fun main() = application {
                         DashboardScreen(
                             userData = currentScreen.userData,
                             navigationState = navigationState,
+                            tokenManager = tokenManager,
                             viewModel = dashboardViewModel
                         )
                     }
@@ -150,7 +151,8 @@ fun main() = application {
                         ProductListScreen(
                             viewModel = productListViewModel,
                             userData = currentScreen.userData,
-                            navigationState = navigationState
+                            navigationState = navigationState,
+                            tokenManager = tokenManager
                         )
                     }
                 }

@@ -58,10 +58,7 @@ fun DashboardScreen(
                 }
             },
             userName = "Admin", // Idealmente, obtener del usuario autenticado
-            onLogout = {
-                tokenManager.clearSession()
-                navigationState.navigateTo(Screen.Login)
-            },
+            onLogout = { },
             title = "Dashboard",
             topBarActions = {
                 IconButton(onClick = { viewModel.loadDashboardData() }) {

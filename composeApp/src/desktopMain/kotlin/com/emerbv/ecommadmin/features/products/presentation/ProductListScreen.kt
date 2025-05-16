@@ -84,10 +84,7 @@ fun ProductListScreen(
                 }
             },
             userName = "Admin", // Idealmente obtener del usuario actual
-            onLogout = {
-                tokenManager.clearSession()
-                navigationState.navigateTo(Screen.Login)
-            },
+            onLogout = { },
             title = if (isSearchVisible) "" else "Products",
             topBarActions = {
                 if (isSearchVisible) {
