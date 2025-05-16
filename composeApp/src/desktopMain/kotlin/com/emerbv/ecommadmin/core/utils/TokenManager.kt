@@ -41,7 +41,7 @@ class TokenManager(private val settings: Settings) {
     // Funciones para gestionar el timeout por inactividad
     fun updateLastActivityTimestamp() {
         settings.putLong(KEY_LAST_ACTIVITY, System.currentTimeMillis())
-        println("Last activity timestamp updated: ${System.currentTimeMillis()}")
+        //println("Last activity timestamp updated: ${System.currentTimeMillis()}")
     }
 
     fun getLastActivityTimestamp(): Long {
@@ -68,4 +68,9 @@ class TokenManager(private val settings: Settings) {
     private fun Settings.getStringOrNull(key: String): String? {
         return if (this.hasKey(key)) this.getString(key, "") else null
     }
+
+    private fun Settings.getLongOrNull(key: String): Long? {
+        return if (this.hasKey(key)) this.getLong(key, 0) else null
+    }
+
 }

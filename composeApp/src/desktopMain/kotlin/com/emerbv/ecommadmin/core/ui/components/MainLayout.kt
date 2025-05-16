@@ -56,7 +56,9 @@ fun MainLayout(
                 currentRoute = currentRoute,
                 onNavigate = onNavigate,
                 userName = userName,
-                onLogout = { sessionManager.logout() }
+                onLogout = {
+                    sessionManager.logout()
+                }
             )
 
             // Contenido principal
