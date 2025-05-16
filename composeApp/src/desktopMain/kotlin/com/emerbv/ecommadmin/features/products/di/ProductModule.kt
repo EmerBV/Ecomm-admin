@@ -65,6 +65,16 @@ val productModule = module {
     factoryOf(::DeleteProductVariantUseCase)
 
     // ViewModels
+    factory { params ->
+        ProductListViewModel(
+            getAllProductsUseCase = get(),
+            getProductsByCategoryUseCase = get(),
+            deleteProductUseCase = get(),
+            scope = get(),
+            tokenManager = get()
+        )
+    }
+
     factoryOf(::ProductListViewModel)
     factoryOf(::ProductFormViewModel)
     factoryOf(::ProductVariantsViewModel)

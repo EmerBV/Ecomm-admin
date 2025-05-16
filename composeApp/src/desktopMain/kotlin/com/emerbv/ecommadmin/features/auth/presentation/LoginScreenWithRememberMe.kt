@@ -20,6 +20,7 @@ import com.emerbv.ecommadmin.core.ui.components.PrimaryButton
 import com.emerbv.ecommadmin.core.ui.components.ThemeToggleButton
 import com.emerbv.ecommadmin.core.ui.theme.AppTheme
 import com.emerbv.ecommadmin.core.ui.theme.ThemeState
+import com.emerbv.ecommadmin.core.utils.TokenManager
 
 /**
  * Pantalla de login mejorada con funcionalidad "Recordarme" y selector de tema.
@@ -29,6 +30,7 @@ fun LoginScreenWithRememberMe(
     viewModel: LoginViewModel,
     credentialsDataStore: CredentialsDataStore,
     themeState: ThemeState,
+    tokenManager: TokenManager, // Añadir esta dependencia
     onLoginSuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -52,9 +54,11 @@ fun LoginScreenWithRememberMe(
                 rememberMe
             )
 
-            // Guardar información de sesión
+            // Guardar información de sesión - AHORA SOLO CON TOKENMANAGER
             uiState.jwtResponse?.let {
-                credentialsDataStore.saveSession(it.token, it.id)
+                tokenManager.saveUserSession(it)
+                // Verificar que el token se guardó correctamente
+                println("Login successful. Token saved: ${tokenManager.getToken()?.take(15)}...")
             }
 
             onLoginSuccess()

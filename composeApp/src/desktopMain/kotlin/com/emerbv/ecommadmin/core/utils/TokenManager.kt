@@ -33,15 +33,13 @@ class TokenManager(private val settings: Settings) {
 
     fun isLoggedIn(): Boolean = getToken() != null && getUserId() != null
 
-    fun refreshTokenIfNeeded(onComplete: (Boolean) -> Unit) {
-        val token = getToken()
-        if (token.isNullOrBlank()) {
-            // Aquí podríamos implementar una lógica para renovar el token
-            // Por ahora, simplemente informamos que no está disponible
-            println("Token not available, cannot refresh")
-            onComplete(false)
-        } else {
-            onComplete(true)
-        }
+    // Helper para depuración
+    fun printTokenStatus() {
+        println("TokenManager status: logged in = ${isLoggedIn()}, token = ${getToken()?.take(10) ?: "null"}")
+    }
+
+    // Extensión de Settings para facilitar el acceso a valores String
+    private fun Settings.getStringOrNull(key: String): String? {
+        return if (this.hasKey(key)) this.getString(key, "") else null
     }
 }

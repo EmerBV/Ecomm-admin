@@ -5,18 +5,16 @@ import com.russhwolf.settings.get
 import com.russhwolf.settings.set
 
 /**
- * Clase para manejar el almacenamiento de credenciales y preferencias del usuario.
- * Utiliza multiplatform-settings para abstraer el almacenamiento específico de cada plataforma.
+ * Clase para manejar el almacenamiento de credenciales del usuario.
+ * Solo gestiona email, contraseña y preferencia de "recordarme".
+ * Ya no maneja tokens - esa responsabilidad ahora es exclusiva de TokenManager.
  */
 class CredentialsDataStore(private val settings: Settings) {
-
     // Claves para acceder a las preferencias
     companion object {
         private const val KEY_EMAIL = "email"
         private const val KEY_PASSWORD = "password"
         private const val KEY_REMEMBER_ME = "remember_me"
-        private const val KEY_TOKEN = "jwt_token"
-        private const val KEY_USER_ID = "user_id"
         private const val KEY_DARK_MODE = "dark_mode"
         private const val KEY_FONT_SIZE = "font_size"
     }
@@ -33,14 +31,6 @@ class CredentialsDataStore(private val settings: Settings) {
         } else {
             clearCredentials()
         }
-    }
-
-    /**
-     * Guarda la información de sesión del usuario.
-     */
-    fun saveSession(token: String, userId: Long) {
-        settings[KEY_TOKEN] = token
-        settings[KEY_USER_ID] = userId.toString()
     }
 
     /**
@@ -68,30 +58,12 @@ class CredentialsDataStore(private val settings: Settings) {
     fun getRememberMe(): Boolean = settings[KEY_REMEMBER_ME, false]
 
     /**
-     * Obtiene el token JWT guardado.
-     */
-    fun getToken(): String? = settings.getStringOrNull(KEY_TOKEN)
-
-    /**
-     * Obtiene el ID de usuario guardado.
-     */
-    fun getUserId(): Long? = settings.getStringOrNull(KEY_USER_ID)?.toLongOrNull()
-
-    /**
      * Limpia las credenciales guardadas.
      */
     fun clearCredentials() {
         settings.remove(KEY_EMAIL)
         settings.remove(KEY_PASSWORD)
         settings.remove(KEY_REMEMBER_ME)
-    }
-
-    /**
-     * Limpia la información de sesión.
-     */
-    fun clearSession() {
-        settings.remove(KEY_TOKEN)
-        settings.remove(KEY_USER_ID)
     }
 
     /**

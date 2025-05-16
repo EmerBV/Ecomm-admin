@@ -360,11 +360,15 @@ class ProductRepositoryImpl(
         emit(ApiResult.Loading)
         try {
             val token = tokenProvider()
+            println("DEBUG: Token for delete operation: ${token?.take(10) ?: "null"}")
+
             if (token.isNullOrBlank()) {
-                emit(ApiResult.Error("Authentication token not available. Please login again.", null))
+                println("DEBUG: Authentication token not available")
+                emit(ApiResult.Error("Authentication token not available. Please login again.", 401))
                 return@flow
             }
 
+            println("DEBUG: Sending delete request for product ID: $productId")
             val response = httpClient.delete("$baseUrl/products/product/$productId/delete") {
                 headers {
                     header("Authorization", "Bearer $token")
@@ -372,10 +376,15 @@ class ProductRepositoryImpl(
                 }
             }
 
+            println("DEBUG: Delete response status: ${response.status}")
+
             if (response.status.isSuccess()) {
+                println("DEBUG: Product deletion successful")
                 emit(ApiResult.Success(true))
             } else {
                 val errorText = response.bodyAsText()
+                println("DEBUG: Error response body: $errorText")
+
                 when (response.status) {
                     HttpStatusCode.Forbidden -> {
                         emit(ApiResult.Error("You do not have permission to delete this product. Only admin users can delete products.", 403))
@@ -392,8 +401,11 @@ class ProductRepositoryImpl(
                 HttpStatusCode.NotFound -> "Product not found"
                 else -> "Connection error: ${e.message}"
             }
+            println("DEBUG: ClientRequestException: $errorMessage")
             emit(ApiResult.Error(errorMessage, e.response.status.value))
         } catch (e: Exception) {
+            println("DEBUG: Exception in deleteProduct: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
             emit(ApiResult.Error("Unexpected error: ${e.message}"))
         }
     }

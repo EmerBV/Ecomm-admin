@@ -78,6 +78,9 @@ class ProductListViewModel(
             return
         }
 
+        // Imprimir estado del token para depuración
+        println("Attempting to delete product $productId. Token: ${tokenManager.getToken()?.take(10)}...")
+
         scope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 

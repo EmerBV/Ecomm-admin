@@ -68,11 +68,11 @@ fun main() = application {
     val categoryFormViewModel = get<CategoryFormViewModel>(CategoryFormViewModel::class.java)
     val tokenManagerInstance = get<TokenManager>(TokenManager::class.java)
 
-    // Verificar si hay una sesión activa
-    val token = credentialsDataStore.getToken()
-    val userId = credentialsDataStore.getUserId()
+    // Verificar si hay una sesión activa usando TokenManager
+    val token = tokenManager.getToken()
+    val userId = tokenManager.getUserId()
 
-    // Estado inicial de la navegación
+// Estado inicial de la navegación
     val initialScreen = if (token != null && userId != null) {
         Screen.Dashboard(
             com.emerbv.ecommadmin.features.auth.data.model.JwtResponse(
@@ -108,6 +108,7 @@ fun main() = application {
                     viewModel = loginViewModel,
                     credentialsDataStore = credentialsDataStore,
                     themeState = themeState,
+                    tokenManager = tokenManager, // Añadir tokenManager
                     onLoginSuccess = {
                         val latestJwtResponse = loginViewModel.uiState.value.jwtResponse
                         if (latestJwtResponse != null) {
