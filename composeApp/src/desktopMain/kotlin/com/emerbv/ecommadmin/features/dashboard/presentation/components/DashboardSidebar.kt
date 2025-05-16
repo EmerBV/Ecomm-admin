@@ -19,14 +19,14 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun DashboardSidebar(
+    currentRoute: String,
     onNavigate: (String) -> Unit,
-    userName: String
+    userName: String,
+    onLogout: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
 ) {
-    // Estado para rastrear qué ítem está activo
-    var activeRoute by remember { mutableStateOf("dashboard") }
-
     Column(
-        modifier = Modifier
+        modifier = modifier
             .width(220.dp)
             .fillMaxHeight()
             .background(MaterialTheme.colors.surface),
@@ -44,9 +44,8 @@ fun DashboardSidebar(
             SidebarItem(
                 icon = Icons.Default.Dashboard,
                 label = "Dashboard",
-                isActive = activeRoute == "dashboard",
+                isActive = currentRoute == "dashboard",
                 onClick = {
-                    activeRoute = "dashboard"
                     onNavigate("dashboard")
                 }
             )
@@ -54,9 +53,8 @@ fun DashboardSidebar(
             SidebarItem(
                 icon = Icons.Default.Inventory,
                 label = "Products",
-                isActive = activeRoute == "products",
+                isActive = currentRoute == "products",
                 onClick = {
-                    activeRoute = "products"
                     onNavigate("products")
                 }
             )
@@ -64,9 +62,8 @@ fun DashboardSidebar(
             SidebarItem(
                 icon = Icons.Default.Category,
                 label = "Categories",
-                isActive = activeRoute == "categories",
+                isActive = currentRoute == "categories",
                 onClick = {
-                    activeRoute = "categories"
                     onNavigate("categories")
                 }
             )
@@ -74,9 +71,8 @@ fun DashboardSidebar(
             SidebarItem(
                 icon = Icons.Default.ShoppingCart,
                 label = "Orders",
-                isActive = activeRoute == "orders",
+                isActive = currentRoute == "orders",
                 onClick = {
-                    activeRoute = "orders"
                     onNavigate("orders")
                 }
             )
@@ -84,9 +80,8 @@ fun DashboardSidebar(
             SidebarItem(
                 icon = Icons.Default.People,
                 label = "Users",
-                isActive = activeRoute == "users",
+                isActive = currentRoute == "users",
                 onClick = {
-                    activeRoute = "users"
                     onNavigate("users")
                 }
             )
@@ -94,25 +89,44 @@ fun DashboardSidebar(
             SidebarItem(
                 icon = Icons.Default.Settings,
                 label = "Settings",
-                isActive = activeRoute == "settings",
+                isActive = currentRoute == "settings",
                 onClick = {
-                    activeRoute = "settings"
                     onNavigate("settings")
                 }
             )
         }
 
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
             horizontalAlignment = Alignment.Start
         ) {
             Divider()
             Spacer(Modifier.height(16.dp))
-            Text(
-                text = userName,
-                style = MaterialTheme.typography.body2,
-                color = MaterialTheme.colors.primary
-            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = userName,
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.primary
+                )
+
+                if (onLogout != null) {
+                    IconButton(
+                        onClick = onLogout,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
         }
     }
 }

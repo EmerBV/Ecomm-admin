@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.emerbv.ecommadmin.core.navigation.NavigationState
 import com.emerbv.ecommadmin.core.navigation.Screen
+import com.emerbv.ecommadmin.core.ui.components.MainLayout
 import com.emerbv.ecommadmin.core.ui.theme.EcommAdminTheme
 import com.emerbv.ecommadmin.core.utils.TokenManager
 import com.emerbv.ecommadmin.features.auth.data.model.JwtResponse
@@ -29,91 +30,65 @@ fun DashboardScreen(
     viewModel: DashboardViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Refresh data when screen is shown
     LaunchedEffect(Unit) {
         viewModel.loadDashboardData()
     }
 
-    EcommAdminTheme {
-        Row(Modifier.fillMaxSize()) {
-            // Sidebar
-            DashboardSidebar(
-                onNavigate = { route ->
-                    when (route) {
-                        "dashboard" -> {}
-                        "products" -> navigationState.navigateTo(Screen.ProductList(userData))
-                        "categories" -> navigationState.navigateTo(Screen.CategoryList(userData))
-                        // Agrega más rutas según sea necesario
-                    }
-                },
-                userName = "Admin"
-            )
+    // Mostrar mensajes de error si hay alguno
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(message = it)
+        }
+    }
 
-            // Contenido principal
+    EcommAdminTheme {
+        MainLayout(
+            currentRoute = "dashboard",
+            onNavigate = { route ->
+                when (route) {
+                    "dashboard" -> {} // Ya estamos en el dashboard
+                    "products" -> navigationState.navigateTo(Screen.ProductList(userData))
+                    "categories" -> navigationState.navigateTo(Screen.CategoryList(userData))
+                    "orders" -> {} // Implementar navegación a órdenes
+                    "users" -> {} // Implementar navegación a usuarios
+                    "settings" -> {} // Implementar navegación a configuración
+                }
+            },
+            userName = "Admin", // Idealmente, obtener del usuario autenticado
+            onLogout = {
+                tokenManager.clearSession()
+                navigationState.navigateTo(Screen.Login)
+            },
+            title = "Dashboard",
+            topBarActions = {
+                IconButton(onClick = { viewModel.loadDashboardData() }) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                }
+                IconButton(onClick = { /* Implementar notificaciones */ }) {
+                    Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                }
+            },
+            snackbarHostState = snackbarHostState
+        ) {
+            // Contenido del dashboard
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .padding(32.dp)
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // TopBar simulada (nombre usuario y notificaciones)
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Admin", style = MaterialTheme.typography.body1)
-                    IconButton(onClick = { /* Notificaciones */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notificaciones")
-                    }
-                    IconButton(onClick = {
-                        tokenManager.clearSession()
-                        navigationState.navigateTo(Screen.Login)
-                    }) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Cerrar sesión")
-                    }
-                }
-
-                // Loading indicator
+                // Loading indicator si está cargando
                 if (uiState.isLoading) {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
 
-                // Error message if any
-                if (uiState.errorMessage != null) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        backgroundColor = MaterialTheme.colors.error.copy(alpha = 0.1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Warning,
-                                contentDescription = "Error",
-                                tint = MaterialTheme.colors.error
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = uiState.errorMessage ?: "",
-                                color = MaterialTheme.colors.error
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                // KPIs
+                // KPIs (Indicadores clave de rendimiento)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    horizontalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     KpiCard(
                         title = "Total Products",
@@ -141,15 +116,11 @@ fun DashboardScreen(
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
-
                 // Quick Access
                 Text(
                     text = "Quick Access",
                     style = MaterialTheme.typography.h6
                 )
-
-                Spacer(Modifier.height(16.dp))
 
                 // Quick access cards
                 Row(
@@ -187,23 +158,20 @@ fun DashboardScreen(
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
-
                 // Main content lists
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
                     Column(Modifier.weight(1f)) {
-                        // Use real data for popular products
                         PopularProductsList(products = uiState.popularProducts)
                     }
                     Column(Modifier.weight(1f)) {
-                        // Use real data for low inventory alerts
                         LowInventoryAlertList(alerts = uiState.lowInventoryAlerts)
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
-
-                // Inventory status with real data
+                // Inventory status
                 InventoryStatusRow(
                     inStockCount = uiState.inStockCount,
                     outOfStockCount = uiState.outOfStockCount,

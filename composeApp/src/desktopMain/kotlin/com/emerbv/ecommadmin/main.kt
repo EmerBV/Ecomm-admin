@@ -39,7 +39,7 @@ import java.util.prefs.Preferences
 fun main() = application {
     val state = rememberWindowState(
         width = 1400.dp,
-        height = 900.dp
+        height = 1000.dp
     )
 
     // Configurar preferencias para almacenamiento
@@ -127,20 +127,9 @@ fun main() = application {
             is Screen.ProductList -> {
                 ProductListScreen(
                     viewModel = productListViewModel,
-                    onProductSelected = { product ->
-                        navigationState.navigateTo(
-                            Screen.ProductDetail(
-                                userData = currentScreen.userData,
-                                product = product
-                            )
-                        )
-                    },
-                    onAddProductClick = { // Nuevo callback
-                        navigationState.navigateTo(Screen.ProductAdd(currentScreen.userData))
-                    },
-                    onBackClick = {
-                        navigationState.navigateTo(Screen.Dashboard(currentScreen.userData))
-                    }
+                    userData = currentScreen.userData,
+                    navigationState = navigationState,
+                    tokenManager = tokenManagerInstance
                 )
             }
             is Screen.ProductAdd -> {

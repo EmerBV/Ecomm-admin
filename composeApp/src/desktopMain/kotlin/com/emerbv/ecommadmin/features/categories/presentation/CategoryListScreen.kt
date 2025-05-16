@@ -18,9 +18,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.emerbv.ecommadmin.core.navigation.NavigationState
 import com.emerbv.ecommadmin.core.navigation.Screen
+import com.emerbv.ecommadmin.core.ui.components.MainLayout
 import com.emerbv.ecommadmin.core.ui.theme.EcommAdminTheme
+import com.emerbv.ecommadmin.core.utils.TokenManager
 import com.emerbv.ecommadmin.features.auth.data.model.JwtResponse
 import com.emerbv.ecommadmin.features.categories.data.model.CategoryDto
+import org.koin.java.KoinJavaComponent.get
 
 @Composable
 fun CategoryListScreen(
@@ -31,6 +34,7 @@ fun CategoryListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf<CategoryDto?>(null) }
+    val tokenManager: TokenManager = get(TokenManager::class.java)
 
     // Snackbar host state for showing success/error messages
     val snackbarHostState = remember { SnackbarHostState() }
@@ -49,47 +53,54 @@ fun CategoryListScreen(
     }
 
     EcommAdminTheme {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Dashboard") },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    backgroundColor = MaterialTheme.colors.background,
-                    elevation = 0.dp,
-                    actions = {
-                        IconButton(onClick = { viewModel.loadCategories() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                        }
-                    }
-                )
+        MainLayout(
+            currentRoute = "categories",
+            onNavigate = { route ->
+                when (route) {
+                    "dashboard" -> navigationState.navigateTo(Screen.Dashboard(userData))
+                    "products" -> navigationState.navigateTo(Screen.ProductList(userData))
+                    "categories" -> {} // Ya estamos en categorías
+                    "orders" -> {} // Implementar navegación a órdenes
+                    "users" -> {} // Implementar navegación a usuarios
+                    "settings" -> {} // Implementar navegación a configuración
+                }
             },
-            snackbarHost = { SnackbarHost(snackbarHostState) }
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp)
-            ) {
+            userName = "Admin", // Idealmente obtener del usuario actual
+            onLogout = {
+                tokenManager.clearSession()
+                navigationState.navigateTo(Screen.Login)
+            },
+            title = "Categories",
+            topBarActions = {
+                IconButton(onClick = { viewModel.loadCategories() }) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                }
+            },
+            snackbarHostState = snackbarHostState
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 Column(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
                 ) {
+                    // Show loading indicator
+                    if (uiState.isLoading) {
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     // Header
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
                             Text(
                                 text = "Categories",
-                                style = MaterialTheme.typography.h6,
+                                style = MaterialTheme.typography.h5,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
@@ -113,12 +124,7 @@ fun CategoryListScreen(
                         }
                     }
 
-                    // Show loading indicator
-                    if (uiState.isLoading) {
-                        LinearProgressIndicator(
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Table header and content
                     Card(
@@ -165,34 +171,38 @@ fun CategoryListScreen(
 
                             // Content area with appropriate state handling
                             if (uiState.isLoading && uiState.categories.isEmpty()) {
+                                // Initial loading
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp),
+                                        .fillMaxSize()
+                                        .height(300.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     CircularProgressIndicator()
                                 }
                             } else if (uiState.errorMessage.isNotEmpty()) {
+                                // Error state
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp),
+                                        .fillMaxSize()
+                                        .height(300.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Error,
                                             contentDescription = "Error",
-                                            tint = MaterialTheme.colors.error
+                                            tint = MaterialTheme.colors.error,
+                                            modifier = Modifier.size(48.dp)
                                         )
                                         Text(
                                             text = uiState.errorMessage,
                                             color = MaterialTheme.colors.error,
-                                            style = MaterialTheme.typography.body2
+                                            style = MaterialTheme.typography.body1,
+                                            textAlign = TextAlign.Center
                                         )
                                         Button(
                                             onClick = { viewModel.loadCategories() },
@@ -200,15 +210,20 @@ fun CategoryListScreen(
                                                 backgroundColor = MaterialTheme.colors.primary
                                             )
                                         ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Refresh,
+                                                contentDescription = "Retry",
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Text("Retry")
                                         }
                                     }
                                 }
                             } else if (uiState.categories.isEmpty()) {
+                                // Empty state
                                 Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp),
+                                    modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -218,11 +233,9 @@ fun CategoryListScreen(
                                     )
                                 }
                             } else {
-                                // Improve LazyColumn implementation with fixed height
+                                // Categories list
                                 LazyColumn(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .heightIn(min = 200.dp, max = 500.dp)
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
                                     items(
                                         items = uiState.categories,
@@ -252,7 +265,12 @@ fun CategoryListScreen(
                     AlertDialog(
                         onDismissRequest = { showDeleteDialog = null },
                         title = { Text("Delete Category") },
-                        text = { Text("Are you sure you want to delete the category '${showDeleteDialog?.name}'? This action cannot be undone.") },
+                        text = {
+                            Text(
+                                "Are you sure you want to delete the category '${showDeleteDialog?.name}'? " +
+                                        "This action cannot be undone."
+                            )
+                        },
                         confirmButton = {
                             Button(
                                 onClick = {
@@ -284,9 +302,6 @@ fun CategoryRow(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
-    // Para fines de depuración
-    println("Renderizando categoría: ${category.id} - ${category.name}")
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
