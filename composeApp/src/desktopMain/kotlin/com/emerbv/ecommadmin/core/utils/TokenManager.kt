@@ -29,18 +29,37 @@ class TokenManager(private val settings: Settings) {
     fun getUserId(): Long? = settings.getStringOrNull(KEY_USER_ID)?.toLongOrNull()
 
     fun clearSession() {
-        // Limpiar todos los datos de sesión
+        println("Clearing session - Before: Token=${getToken()?.take(10) ?: "null"}, UserId=${getUserId()}")
+
+        // Use direct removal with clear keys
         settings.remove(KEY_TOKEN)
         settings.remove(KEY_USER_ID)
         settings.remove(KEY_LAST_ACTIVITY)
 
-        // Añadir verificación explícita
-        if (settings.hasKey(KEY_TOKEN) || settings.hasKey(KEY_USER_ID)) {
-            println("ERROR: No se pudieron eliminar las claves de sesión")
-            settings.clear()  // Esto limpia todas las preferencias (usa con cuidado)
-        } else {
-            println("Session cleared completely")
+        // Try to force settings to save immediately if possible
+        try {
+            // This approach works with most Settings implementations
+            // without requiring explicit type checking
+            val settingsClass = settings.javaClass
+            val flushMethod = settingsClass.methods.find { it.name == "flush" || it.name == "commit" }
+            flushMethod?.invoke(settings)
+        } catch (e: Exception) {
+            println("Info: No flush/commit method available: ${e.message}")
+            // Normal for some implementations, not an error
         }
+
+        // Verification
+        if (settings.hasKey(KEY_TOKEN) || settings.hasKey(KEY_USER_ID)) {
+            println("WARNING: Failed to remove session keys, attempting aggressive cleanup")
+            try {
+                // More aggressive approach - clear everything if specific keys failed
+                settings.clear()
+            } catch (e: Exception) {
+                println("ERROR: Even aggressive cleanup failed: ${e.message}")
+            }
+        }
+
+        println("Clearing session - After: Token=${getToken()?.take(10) ?: "null"}, UserId=${getUserId()}")
     }
 
     fun isLoggedIn(): Boolean = getToken() != null && getUserId() != null

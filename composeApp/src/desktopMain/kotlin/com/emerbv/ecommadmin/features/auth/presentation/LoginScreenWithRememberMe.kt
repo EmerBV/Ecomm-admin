@@ -31,16 +31,24 @@ fun LoginScreenWithRememberMe(
     credentialsDataStore: CredentialsDataStore,
     themeState: ThemeState,
     tokenManager: TokenManager, // Añadir esta dependencia
+    preventAutoLogin: Boolean = false,
     onLoginSuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var rememberMe by remember { mutableStateOf(credentialsDataStore.getRememberMe()) }
 
-    // Si hay credenciales guardadas, rellenar los campos
     LaunchedEffect(Unit) {
         if (credentialsDataStore.hasCredentials()) {
             credentialsDataStore.getEmail()?.let { viewModel.validateEmail(it) }
             credentialsDataStore.getPassword()?.let { viewModel.validatePassword(it) }
+
+            // Only auto-login if not prevented (i.e., not after logout)
+            if (!preventAutoLogin && rememberMe &&
+                credentialsDataStore.getEmail() != null &&
+                credentialsDataStore.getPassword() != null) {
+                // Perform auto-login
+                viewModel.login()
+            }
         }
     }
 

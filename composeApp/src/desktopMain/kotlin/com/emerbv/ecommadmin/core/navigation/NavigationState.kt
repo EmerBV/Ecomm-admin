@@ -27,20 +27,21 @@ sealed class Screen {
 class NavigationState(
     val currentScreen: MutableState<Screen>
 ) {
+    var previousScreen: Screen? = null
+        private set
+
     fun navigateTo(screen: Screen) {
-        println("Navegando a: ${screen::class.simpleName}")
-        val oldScreen = currentScreen.value
+        println("Navigating to: ${screen::class.simpleName}")
 
-        // Caso especial para la navegación a Login
-        if (screen is Screen.Login) {
-            println("Navegando a Login desde ${oldScreen::class.simpleName}")
-        }
+        // Store current screen as previous before changing
+        previousScreen = currentScreen.value
 
+        // Update current screen
         currentScreen.value = screen
 
-        // Verificación explícita
+        // Verification
         if (currentScreen.value != screen) {
-            println("ERROR: La navegación no actualizó el estado correctamente")
+            println("ERROR: Navigation did not update state correctly")
         }
     }
 }

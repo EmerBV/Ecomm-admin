@@ -7,13 +7,15 @@ import androidx.compose.runtime.remember
 import com.emerbv.ecommadmin.core.navigation.NavigationState
 import com.emerbv.ecommadmin.core.navigation.Screen
 import com.emerbv.ecommadmin.core.utils.TokenManager
+import com.emerbv.ecommadmin.core.datastore.CredentialsDataStore
 
 /**
  * Clase de sesión centralizada para manejar la lógica de autenticación y actividad del usuario
  */
 class SessionManager(
     private val tokenManager: TokenManager,
-    private val navigationState: NavigationState
+    private val navigationState: NavigationState,
+    private val credentialsDataStore: CredentialsDataStore
 ) {
     /**
      * Actualiza la marca de tiempo de la última actividad del usuario
@@ -31,28 +33,27 @@ class SessionManager(
         return tokenManager.hasSessionTimedOut(timeoutMillis)
     }
 
-    /**
-     * Ejecuta el cierre de sesión completo: limpia el token y redirige al login
-     */
     fun logout() {
-        println("Logout iniciado. Estado previo: ${tokenManager.isLoggedIn()}")
+        println("Logout initiated - Session status before: isLoggedIn=${isLoggedIn()}")
 
-        // Limpiar token
+        // Clear token first
         tokenManager.clearSession()
 
-        // Verificar que realmente se limpió
+        // Also clear any saved credentials that might cause auto-login
+        credentialsDataStore.clearCredentials()
+
+        // Double-check token is cleared
         if (tokenManager.isLoggedIn()) {
-            println("ERROR: El token no se eliminó correctamente")
-            // Intento más agresivo si el primer intento falló
+            println("ERROR: Session still active after clearing, forcing cleanup")
             tokenManager.clearSession()
         }
 
-        println("Estado post-limpieza: ${tokenManager.isLoggedIn()}")
+        println("Token cleared - Session status after: isLoggedIn=${tokenManager.isLoggedIn()}")
 
-        // Navegar explícitamente a la pantalla de login
+        // Force navigation to Login screen
         navigationState.navigateTo(Screen.Login)
 
-        println("Navegación a login completada")
+        println("Navigation to Login completed")
     }
 
     /**
@@ -76,10 +77,11 @@ val LocalSessionManager = compositionLocalOf<SessionManager?> { null }
 fun SessionManagerProvider(
     tokenManager: TokenManager,
     navigationState: NavigationState,
+    credentialsDataStore: CredentialsDataStore,
     content: @Composable () -> Unit
 ) {
     val sessionManager = remember {
-        SessionManager(tokenManager, navigationState)
+        SessionManager(tokenManager, navigationState, credentialsDataStore)
     }
 
     CompositionLocalProvider(LocalSessionManager provides sessionManager) {

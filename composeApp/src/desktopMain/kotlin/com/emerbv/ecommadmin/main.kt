@@ -1,7 +1,10 @@
 package com.emerbv.ecommadmin
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -130,16 +133,17 @@ fun main() = application {
 
         SessionManagerProvider(
             tokenManager = tokenManager,
-            navigationState = navigationState
+            navigationState = navigationState,
+            credentialsDataStore = credentialsDataStore
         ) {
             when (currentScreen) {
                 is Screen.Login -> {
-                    val uiState by loginViewModel.uiState.collectAsState()
-                    val jwtResponse = uiState.jwtResponse
+                    // Don't automatically log in when coming from logout
+                    val isFromLogout = remember { mutableStateOf(false) }
 
-                    // Si el usuario está autenticado, navegar al dashboard
-                    if (uiState.isLoggedIn && jwtResponse != null) {
-                        navigationState.navigateTo(Screen.Dashboard(jwtResponse))
+                    // Check if we're coming from logout
+                    LaunchedEffect(Unit) {
+                        isFromLogout.value = navigationState.previousScreen is Screen.Dashboard
                     }
 
                     LoginScreenWithRememberMe(
@@ -147,6 +151,7 @@ fun main() = application {
                         credentialsDataStore = credentialsDataStore,
                         themeState = themeState,
                         tokenManager = tokenManager,
+                        preventAutoLogin = isFromLogout.value,  // Pass this to login screen
                         onLoginSuccess = {
                             val latestJwtResponse = loginViewModel.uiState.value.jwtResponse
                             if (latestJwtResponse != null) {

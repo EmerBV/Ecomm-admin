@@ -57,7 +57,11 @@ fun MainLayout(
                 onNavigate = onNavigate,
                 userName = userName,
                 onLogout = {
+                    println("Logout requested from MainLayout")
+                    // First call the session manager's logout
                     sessionManager.logout()
+                    // Then call the provided onLogout callback
+                    onLogout()
                 }
             )
 
