@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.emerbv.ecommadmin.core.session.LocalSessionManager
 import com.emerbv.ecommadmin.features.dashboard.presentation.components.DashboardSidebar
 
 @Composable
@@ -22,6 +23,10 @@ fun MainLayout(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     content: @Composable () -> Unit
 ) {
+    // Acceder al gestor de sesión desde el contexto de composición
+    val sessionManager = LocalSessionManager.current
+        ?: throw IllegalStateException("SessionManager no encontrado. Asegúrate de usar SessionManagerProvider.")
+
     Scaffold(
         topBar = {
             if (title.isNotEmpty() || showBackButton || topBarActions != {}) {
@@ -51,7 +56,7 @@ fun MainLayout(
                 currentRoute = currentRoute,
                 onNavigate = onNavigate,
                 userName = userName,
-                onLogout = onLogout
+                onLogout = { sessionManager.logout() }
             )
 
             // Contenido principal

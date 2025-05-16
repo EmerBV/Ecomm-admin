@@ -10,8 +10,11 @@ import com.emerbv.ecommadmin.core.datastore.CredentialsDataStore
 import com.emerbv.ecommadmin.core.di.appModule
 import com.emerbv.ecommadmin.core.navigation.Screen
 import com.emerbv.ecommadmin.core.navigation.rememberNavigationState
+import com.emerbv.ecommadmin.core.session.SessionManagerProvider
+import com.emerbv.ecommadmin.core.session.SessionScreen
 import com.emerbv.ecommadmin.core.ui.theme.rememberThemeState
 import com.emerbv.ecommadmin.core.utils.TokenManager
+import com.emerbv.ecommadmin.features.auth.data.model.JwtResponse
 import com.emerbv.ecommadmin.features.auth.presentation.LoginScreenWithRememberMe
 import com.emerbv.ecommadmin.features.auth.presentation.LoginViewModel
 import com.emerbv.ecommadmin.features.categories.di.categoryModule
@@ -66,16 +69,23 @@ fun main() = application {
     val productVariantsViewModel = get<ProductVariantsViewModel>(ProductVariantsViewModel::class.java)
     val categoryListViewModel = get<CategoryListViewModel>(CategoryListViewModel::class.java)
     val categoryFormViewModel = get<CategoryFormViewModel>(CategoryFormViewModel::class.java)
-    val tokenManagerInstance = get<TokenManager>(TokenManager::class.java)
+    val dashboardViewModel = get<DashboardViewModel>(DashboardViewModel::class.java)
 
     // Verificar si hay una sesión activa usando TokenManager
     val token = tokenManager.getToken()
     val userId = tokenManager.getUserId()
 
+    // Verificar timeout al inicio
+    if (token != null && userId != null && tokenManager.hasSessionTimedOut(30 * 60 * 1000)) { // 30 minutos
+        tokenManager.clearSession()
+        println("Sesión caducada por inactividad al iniciar la aplicación")
+    }
+
 // Estado inicial de la navegación
     val initialScreen = if (token != null && userId != null) {
+        tokenManager.updateLastActivityTimestamp()
         Screen.Dashboard(
-            com.emerbv.ecommadmin.features.auth.data.model.JwtResponse(
+            JwtResponse(
                 id = userId,
                 token = token
             )
@@ -84,152 +94,167 @@ fun main() = application {
         Screen.Login
     }
 
+    val navigationState = rememberNavigationState(initialScreen)
+    val themeState = rememberThemeState(credentialsDataStore)
+
     Window(
         onCloseRequest = ::exitApplication,
         title = "EcommAdmin",
         resizable = false,
         state = state
     ) {
-        val navigationState = rememberNavigationState(initialScreen)
-        val themeState = rememberThemeState(credentialsDataStore)
         val currentScreen = navigationState.currentScreen.value
 
-        when (currentScreen) {
-            is Screen.Login -> {
-                val uiState by loginViewModel.uiState.collectAsState()
-                val jwtResponse = uiState.jwtResponse
+        SessionManagerProvider(
+            tokenManager = tokenManager,
+            navigationState = navigationState
+        ) {
+            when (currentScreen) {
+                is Screen.Login -> {
+                    val uiState by loginViewModel.uiState.collectAsState()
+                    val jwtResponse = uiState.jwtResponse
 
-                // Si el usuario está autenticado, navegar al dashboard
-                if (uiState.isLoggedIn && jwtResponse != null) {
-                    navigationState.navigateTo(Screen.Dashboard(jwtResponse))
+                    // Si el usuario está autenticado, navegar al dashboard
+                    if (uiState.isLoggedIn && jwtResponse != null) {
+                        navigationState.navigateTo(Screen.Dashboard(jwtResponse))
+                    }
+
+                    LoginScreenWithRememberMe(
+                        viewModel = loginViewModel,
+                        credentialsDataStore = credentialsDataStore,
+                        themeState = themeState,
+                        tokenManager = tokenManager,
+                        onLoginSuccess = {
+                            val latestJwtResponse = loginViewModel.uiState.value.jwtResponse
+                            if (latestJwtResponse != null) {
+                                tokenManager.updateLastActivityTimestamp()
+                                navigationState.navigateTo(Screen.Dashboard(latestJwtResponse))
+                            }
+                        }
+                    )
                 }
 
-                LoginScreenWithRememberMe(
-                    viewModel = loginViewModel,
-                    credentialsDataStore = credentialsDataStore,
-                    themeState = themeState,
-                    tokenManager = tokenManager, // Añadir tokenManager
-                    onLoginSuccess = {
-                        val latestJwtResponse = loginViewModel.uiState.value.jwtResponse
-                        if (latestJwtResponse != null) {
-                            navigationState.navigateTo(Screen.Dashboard(latestJwtResponse))
-                        }
-                    }
-                )
-            }
-            is Screen.Dashboard -> {
-                DashboardScreen(
-                    userData = currentScreen.userData,
-                    navigationState = navigationState,
-                    tokenManager = tokenManagerInstance,
-                    viewModel = get<DashboardViewModel>(DashboardViewModel::class.java)
-                )
-            }
-            is Screen.ProductList -> {
-                ProductListScreen(
-                    viewModel = productListViewModel,
-                    userData = currentScreen.userData,
-                    navigationState = navigationState,
-                    tokenManager = tokenManagerInstance
-                )
-            }
-            is Screen.ProductAdd -> {
-                ProductFormScreen(
-                    isNewProduct = true,
-                    initialProduct = null,
-                    viewModel = productFormViewModel,
-                    onSaveClick = { newProduct ->
-                        navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
-                    },
-                    onCancelClick = {
-                        // Volver a la lista de productos
-                        navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
-                    }
-                )
-            }
-            is Screen.ProductEdit -> {
-                ProductFormScreen(
-                    isNewProduct = false,
-                    initialProduct = currentScreen.product,
-                    viewModel = productFormViewModel,
-                    onSaveClick = { updatedProduct ->
-                        navigationState.navigateTo(
-                            Screen.ProductDetail(
-                                userData = currentScreen.userData,
-                                product = updatedProduct
-                            )
-                        )
-                    },
-                    onCancelClick = {
-                        navigationState.navigateTo(
-                            Screen.ProductDetail(
-                                userData = currentScreen.userData,
-                                product = currentScreen.product
-                            )
+                // Pantallas protegidas que requieren autenticación
+                // Todas envueltas en SessionScreen para monitoreo de actividad automático
+                is Screen.Dashboard -> {
+                    SessionScreen {
+                        DashboardScreen(
+                            userData = currentScreen.userData,
+                            navigationState = navigationState,
+                            viewModel = dashboardViewModel
                         )
                     }
-                )
-            }
-            is Screen.ProductDetail -> {
-                productVariantsViewModel.initWithProduct(currentScreen.product)
-
-                ProductDetailScreen(
-                    product = currentScreen.product,
-                    variantsViewModel = productVariantsViewModel,
-                    onBackClick = {
-                        navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
-                    },
-                    onEditClick = { product ->
-                        navigationState.navigateTo(
-                            Screen.ProductEdit(
-                                userData = currentScreen.userData,
-                                product = product
-                            )
+                }
+                is Screen.ProductList -> {
+                    SessionScreen {
+                        ProductListScreen(
+                            viewModel = productListViewModel,
+                            userData = currentScreen.userData,
+                            navigationState = navigationState
                         )
-                    },
-                    onDeleteClick = {}
-                )
-            }
-            is Screen.CategoryList -> {
-                // Debug
-                println("Renderizando CategoryListScreen")
+                    }
+                }
+                is Screen.ProductAdd -> {
+                    SessionScreen {
+                        ProductFormScreen(
+                            isNewProduct = true,
+                            initialProduct = null,
+                            viewModel = productFormViewModel,
+                            onSaveClick = { newProduct ->
+                                navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
+                            },
+                            onCancelClick = {
+                                navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
+                            }
+                        )
+                    }
+                }
+                is Screen.ProductEdit -> {
+                    SessionScreen {
+                        ProductFormScreen(
+                            isNewProduct = false,
+                            initialProduct = currentScreen.product,
+                            viewModel = productFormViewModel,
+                            onSaveClick = { updatedProduct ->
+                                navigationState.navigateTo(
+                                    Screen.ProductDetail(
+                                        userData = currentScreen.userData,
+                                        product = updatedProduct
+                                    )
+                                )
+                            },
+                            onCancelClick = {
+                                navigationState.navigateTo(
+                                    Screen.ProductDetail(
+                                        userData = currentScreen.userData,
+                                        product = currentScreen.product
+                                    )
+                                )
+                            }
+                        )
+                    }
+                }
+                is Screen.ProductDetail -> {
+                    SessionScreen {
+                        productVariantsViewModel.initWithProduct(currentScreen.product)
 
-                // Antes de mostrar, inténtemos cargar las categorías
-                categoryListViewModel.loadCategories()
-
-                CategoryListScreen(
-                    viewModel = categoryListViewModel,
-                    userData = currentScreen.userData,
-                    navigationState = navigationState,
-                    onBackClick = {
-                        navigationState.navigateTo(Screen.Dashboard(currentScreen.userData))
+                        ProductDetailScreen(
+                            product = currentScreen.product,
+                            variantsViewModel = productVariantsViewModel,
+                            onBackClick = {
+                                navigationState.navigateTo(Screen.ProductList(currentScreen.userData))
+                            },
+                            onEditClick = { product ->
+                                navigationState.navigateTo(
+                                    Screen.ProductEdit(
+                                        userData = currentScreen.userData,
+                                        product = product
+                                    )
+                                )
+                            },
+                            onDeleteClick = { /* Implementar eliminación */ }
+                        )
                     }
-                )
-            }
-            is Screen.CategoryAdd -> {
-                CategoryAddScreen(
-                    viewModel = categoryFormViewModel,
-                    onSaveComplete = {
-                        // Volver a la lista de categorías después de guardar
-                        navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
-                    },
-                    onCancel = {
-                        navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
+                }
+                is Screen.CategoryList -> {
+                    SessionScreen {
+                        CategoryListScreen(
+                            viewModel = categoryListViewModel,
+                            userData = currentScreen.userData,
+                            navigationState = navigationState,
+                            onBackClick = {
+                                navigationState.navigateTo(Screen.Dashboard(currentScreen.userData))
+                            }
+                        )
                     }
-                )
-            }
-            is Screen.CategoryEdit -> {
-                CategoryEditScreen(
-                    category = currentScreen.category,
-                    viewModel = categoryFormViewModel,
-                    onSaveComplete = {
-                        // Volver a la lista de categorías después de guardar
-                        navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
-                    },
-                    onCancel = {
-                        navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
+                }
+                is Screen.CategoryAdd -> {
+                    SessionScreen {
+                        CategoryAddScreen(
+                            viewModel = categoryFormViewModel,
+                            onSaveComplete = {
+                                navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
+                            },
+                            onCancel = {
+                                navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
+                            }
+                        )
                     }
-                )
+                }
+                is Screen.CategoryEdit -> {
+                    SessionScreen {
+                        CategoryEditScreen(
+                            category = currentScreen.category,
+                            viewModel = categoryFormViewModel,
+                            onSaveComplete = {
+                                navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
+                            },
+                            onCancel = {
+                                navigationState.navigateTo(Screen.CategoryList(currentScreen.userData))
+                            }
+                        )
+                    }
+                }
             }
         }
     }

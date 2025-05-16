@@ -22,7 +22,7 @@ fun DashboardSidebar(
     currentRoute: String,
     onNavigate: (String) -> Unit,
     userName: String,
-    onLogout: (() -> Unit)? = null,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -114,17 +114,15 @@ fun DashboardSidebar(
                     color = MaterialTheme.colors.primary
                 )
 
-                if (onLogout != null) {
-                    IconButton(
-                        onClick = onLogout,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Logout",
-                            tint = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
-                        )
-                    }
+                IconButton(
+                    onClick = onLogout,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = "Logout",
+                        tint = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                    )
                 }
             }
         }
