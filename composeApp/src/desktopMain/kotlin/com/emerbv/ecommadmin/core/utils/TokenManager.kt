@@ -19,50 +19,74 @@ class TokenManager(private val settings: Settings) {
         println("Token saved: ${jwtResponse.token.take(15)}...")
     }
 
-    fun getToken(): String? {
-        val token = settings.getStringOrNull(KEY_TOKEN)
+    fun getToken(forceReload: Boolean = false): String? {
+        val token = if (forceReload) {
+            // Leer directamente del almacenamiento, ignorando posibles cachés
+            if (settings.hasKey(KEY_TOKEN)) settings.getString(KEY_TOKEN, "") else null
+        } else {
+            settings.getStringOrNull(KEY_TOKEN)
+        }
+
         // Log para depuración
         println("Retrieved token: ${token?.take(15)}...")
         return token
     }
 
-    fun getUserId(): Long? = settings.getStringOrNull(KEY_USER_ID)?.toLongOrNull()
+    fun getUserId(forceReload: Boolean = false): Long? =
+        if (forceReload) {
+            if (settings.hasKey(KEY_USER_ID))
+                settings.getString(KEY_USER_ID, "").toLongOrNull()
+            else null
+        } else {
+            settings.getStringOrNull(KEY_USER_ID)?.toLongOrNull()
+        }
 
-    fun clearSession() {
+    fun clearSession(): Boolean {
         println("Clearing session - Before: Token=${getToken()?.take(10) ?: "null"}, UserId=${getUserId()}")
 
-        // Use direct removal with clear keys
+        // Eliminar token y datos de usuario
         settings.remove(KEY_TOKEN)
         settings.remove(KEY_USER_ID)
         settings.remove(KEY_LAST_ACTIVITY)
 
-        // Try to force settings to save immediately if possible
+        // Intentar forzar guardado
         try {
-            // This approach works with most Settings implementations
-            // without requiring explicit type checking
             val settingsClass = settings.javaClass
             val flushMethod = settingsClass.methods.find { it.name == "flush" || it.name == "commit" }
             flushMethod?.invoke(settings)
         } catch (e: Exception) {
             println("Info: No flush/commit method available: ${e.message}")
-            // Normal for some implementations, not an error
+            // Normal para algunas implementaciones
         }
 
-        // Verification
-        if (settings.hasKey(KEY_TOKEN) || settings.hasKey(KEY_USER_ID)) {
+        // Verificar si se eliminó
+        val stillHasToken = settings.hasKey(KEY_TOKEN)
+        val stillHasUserId = settings.hasKey(KEY_USER_ID)
+
+        // Si aún existe alguna clave, intentar limpieza agresiva
+        if (stillHasToken || stillHasUserId) {
             println("WARNING: Failed to remove session keys, attempting aggressive cleanup")
             try {
-                // More aggressive approach - clear everything if specific keys failed
+                // Enfoque más agresivo - limpiar todo si fallan las claves específicas
                 settings.clear()
             } catch (e: Exception) {
                 println("ERROR: Even aggressive cleanup failed: ${e.message}")
+                return false
             }
         }
 
-        println("Clearing session - After: Token=${getToken()?.take(10) ?: "null"}, UserId=${getUserId()}")
+        println("Clearing session - After: Token=${getToken(forceReload = true)?.take(10) ?: "null"}, UserId=${getUserId(forceReload = true)}")
+
+        // Verificación final
+        return !settings.hasKey(KEY_TOKEN) && !settings.hasKey(KEY_USER_ID)
     }
 
-    fun isLoggedIn(): Boolean = getToken() != null && getUserId() != null
+    fun isLoggedIn(): Boolean {
+        val hasToken = getToken() != null
+        val hasUserId = getUserId() != null
+        println("TokenManager.isLoggedIn() - hasToken=$hasToken, hasUserId=$hasUserId")
+        return hasToken && hasUserId
+    }
 
     // Funciones para gestionar el timeout por inactividad
     fun updateLastActivityTimestamp() {
@@ -102,5 +126,4 @@ class TokenManager(private val settings: Settings) {
     private fun Settings.getLongOrNull(key: String): Long? {
         return if (this.hasKey(key)) this.getLong(key, 0) else null
     }
-
 }

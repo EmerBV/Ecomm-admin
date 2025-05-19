@@ -44,6 +44,15 @@ class NavigationState(
             println("ERROR: Navigation did not update state correctly")
         }
     }
+
+    /**
+     * Reinicia completamente el estado de navegación a la pantalla de Login
+     */
+    fun resetToLogin() {
+        println("Resetting navigation stack to Login")
+        previousScreen = null
+        currentScreen.value = Screen.Login
+    }
 }
 
 @Composable

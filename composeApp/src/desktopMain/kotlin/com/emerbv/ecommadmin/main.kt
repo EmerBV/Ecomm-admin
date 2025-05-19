@@ -76,22 +76,30 @@ fun main() = application {
     val dashboardViewModel = get<DashboardViewModel>(DashboardViewModel::class.java)
 
     // Verificar si hay una sesión activa usando TokenManager
-    val token = tokenManager.getToken()
-    val userId = tokenManager.getUserId()
+    val token = tokenManager.getToken(forceReload = true)
+    val userId = tokenManager.getUserId(forceReload = true)
 
-    // Verificar timeout al inicio
-    if (token != null && userId != null && tokenManager.hasSessionTimedOut(30 * 60 * 1000)) { // 30 minutos
-        tokenManager.clearSession()
-        println("Sesión caducada por inactividad al iniciar la aplicación")
+    // Verificar timeout al inicio y limpiar sesión si es necesario
+    if (token != null && userId != null) {
+        if (tokenManager.hasSessionTimedOut(TimeUnit.MINUTES.toMillis(30))) {
+            println("Sesión caducada por inactividad al iniciar la aplicación")
+            tokenManager.clearSession()
+            credentialsDataStore.clearCredentials()
+        } else {
+            println("Sesión activa válida, actualizando timestamp de actividad")
+            tokenManager.updateLastActivityTimestamp()
+        }
     }
 
-// Estado inicial de la navegación
-    val initialScreen = if (token != null && userId != null) {
-        tokenManager.updateLastActivityTimestamp()
+// Determinar pantalla inicial después de verificar timeout
+    val initialScreen = if (tokenManager.isLoggedIn()) {
+        val currentUserId = tokenManager.getUserId() ?: throw IllegalStateException("User ID missing after isLoggedIn check")
+        val currentToken = tokenManager.getToken() ?: throw IllegalStateException("Token missing after isLoggedIn check")
+
         Screen.Dashboard(
             JwtResponse(
-                id = userId,
-                token = token
+                id = currentUserId,
+                token = currentToken
             )
         )
     } else {

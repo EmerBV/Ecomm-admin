@@ -8,6 +8,9 @@ import com.emerbv.ecommadmin.core.navigation.NavigationState
 import com.emerbv.ecommadmin.core.navigation.Screen
 import com.emerbv.ecommadmin.core.utils.TokenManager
 import com.emerbv.ecommadmin.core.datastore.CredentialsDataStore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Clase de sesión centralizada para manejar la lógica de autenticación y actividad del usuario
@@ -17,6 +20,10 @@ class SessionManager(
     private val navigationState: NavigationState,
     private val credentialsDataStore: CredentialsDataStore
 ) {
+    // Estado para indicar si el usuario acaba de hacer logout
+    private val _justLoggedOut = MutableStateFlow(false)
+    val justLoggedOut: StateFlow<Boolean> = _justLoggedOut.asStateFlow()
+
     /**
      * Actualiza la marca de tiempo de la última actividad del usuario
      */
@@ -33,11 +40,20 @@ class SessionManager(
         return tokenManager.hasSessionTimedOut(timeoutMillis)
     }
 
+    /**
+     * Realiza un logout completo, limpiando el token, credenciales y estados relacionados,
+     * y navegando a la pantalla de login.
+     */
     fun logout() {
-        println("Logout initiated - Session status before: isLoggedIn=${isLoggedIn()}")
+        println("=================== LOGOUT SEQUENCE START ===================")
+        println("SessionManager.logout() - Before: isLoggedIn=${isLoggedIn()}")
+        println("TokenManager state - Token=${tokenManager.getToken()?.take(10) ?: "null"}")
+
+        // Marcar que acabamos de hacer logout
+        _justLoggedOut.value = true
 
         // Clear token first
-        tokenManager.clearSession()
+        val tokenCleared = tokenManager.clearSession()
 
         // Also clear any saved credentials that might cause auto-login
         credentialsDataStore.clearCredentials()
@@ -48,12 +64,21 @@ class SessionManager(
             tokenManager.clearSession()
         }
 
-        println("Token cleared - Session status after: isLoggedIn=${tokenManager.isLoggedIn()}")
+        println("After token/credentials clear: isLoggedIn=${isLoggedIn()}")
+        println("TokenManager state - Token=${tokenManager.getToken(forceReload = true)?.take(10) ?: "null"}")
 
         // Force navigation to Login screen
-        navigationState.navigateTo(Screen.Login)
+        resetNavigation()
 
         println("Navigation to Login completed")
+        println("=================== LOGOUT SEQUENCE END ===================")
+    }
+
+    /**
+     * Resetea el estado de navegación a la pantalla de login
+     */
+    private fun resetNavigation() {
+        navigationState.resetToLogin()
     }
 
     /**
@@ -61,7 +86,17 @@ class SessionManager(
      * @return True si hay un token activo
      */
     fun isLoggedIn(): Boolean {
-        return tokenManager.isLoggedIn()
+        // Verificación directa del almacenamiento
+        val currentToken = tokenManager.getToken(forceReload = true)
+        val currentUserId = tokenManager.getUserId(forceReload = true)
+        return currentToken != null && currentUserId != null
+    }
+
+    /**
+     * Método para indicar que se ha completado un login exitoso
+     */
+    fun onLoginSuccess() {
+        _justLoggedOut.value = false
     }
 }
 

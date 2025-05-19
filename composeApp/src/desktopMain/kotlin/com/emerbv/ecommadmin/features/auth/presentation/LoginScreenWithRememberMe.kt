@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.emerbv.ecommadmin.core.datastore.CredentialsDataStore
+import com.emerbv.ecommadmin.core.session.LocalSessionManager
 import com.emerbv.ecommadmin.core.ui.components.EmailTextField
 import com.emerbv.ecommadmin.core.ui.components.PasswordTextField
 import com.emerbv.ecommadmin.core.ui.components.PrimaryButton
@@ -30,24 +31,34 @@ fun LoginScreenWithRememberMe(
     viewModel: LoginViewModel,
     credentialsDataStore: CredentialsDataStore,
     themeState: ThemeState,
-    tokenManager: TokenManager, // Añadir esta dependencia
+    tokenManager: TokenManager,
     preventAutoLogin: Boolean = false,
     onLoginSuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var rememberMe by remember { mutableStateOf(credentialsDataStore.getRememberMe()) }
 
+    // Obtener el SessionManager
+    val sessionManager = LocalSessionManager.current ?:
+    throw IllegalStateException("SessionManager not found. Make sure to use SessionManagerProvider.")
+
+    // Usar el estado justLoggedOut del SessionManager
+    val justLoggedOut by sessionManager.justLoggedOut.collectAsState()
+
     LaunchedEffect(Unit) {
+        // Cargar credenciales guardadas si existen
         if (credentialsDataStore.hasCredentials()) {
             credentialsDataStore.getEmail()?.let { viewModel.validateEmail(it) }
             credentialsDataStore.getPassword()?.let { viewModel.validatePassword(it) }
 
-            // Only auto-login if not prevented (i.e., not after logout)
-            if (!preventAutoLogin && rememberMe &&
+            // Solo auto-login si no está prevenido y no acaba de hacer logout
+            if (!preventAutoLogin && !justLoggedOut && rememberMe &&
                 credentialsDataStore.getEmail() != null &&
                 credentialsDataStore.getPassword() != null) {
-                // Perform auto-login
+                println("Auto-login iniciado")
                 viewModel.login()
+            } else if (justLoggedOut) {
+                println("Auto-login prevenido: usuario acaba de hacer logout")
             }
         }
     }
@@ -62,11 +73,13 @@ fun LoginScreenWithRememberMe(
                 rememberMe
             )
 
-            // Guardar información de sesión - AHORA SOLO CON TOKENMANAGER
+            // Guardar información de sesión con TokenManager
             uiState.jwtResponse?.let {
                 tokenManager.saveUserSession(it)
-                // Verificar que el token se guardó correctamente
                 println("Login successful. Token saved: ${tokenManager.getToken()?.take(15)}...")
+
+                // Notificar al SessionManager que el login fue exitoso
+                sessionManager.onLoginSuccess()
             }
 
             onLoginSuccess()
